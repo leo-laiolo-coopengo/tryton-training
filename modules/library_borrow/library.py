@@ -1,7 +1,7 @@
 import datetime
 
 from sql import Null
-from sql.operators import Concat
+from sql.operators import Concat, NotIn
 from sql.aggregate import Count, Min
 
 from trytond.pool import PoolMeta, Pool
@@ -149,14 +149,20 @@ class Book(metaclass=PoolMeta):
         checkout = pool.get('library.user.checkout').__table__()
         exemplary = pool.get('library.book.exemplary').__table__()
         book = cls.__table__()
+
+        sub_query = exemplary.join(checkout, 'LEFT OUTER',
+            condition=(checkout.exemplary == exemplary.id)
+            ).select(exemplary.id,
+            where=((checkout.return_date == Null) & (checkout.id != Null)))
+
+        query = book.join(exemplary,
+            condition=(exemplary.book == book.id)
+            ).select(book.id,
+            where=(NotIn(exemplary.id, sub_query)))
+
         result = {x.id: False for x in books}
         cursor = Transaction().connection.cursor()
-        cursor.execute(*book.join(exemplary,
-                condition=(exemplary.book == book.id)
-                ).join(checkout, 'LEFT OUTER',
-                condition=(exemplary.id == checkout.exemplary)
-                ).select(book.id,
-                where=(checkout.return_date != Null) | (checkout.id == Null)))
+        cursor.execute(*query)
         for book_id, in cursor.fetchall():
             result[book_id] = True
         return result
@@ -170,12 +176,15 @@ class Book(metaclass=PoolMeta):
         checkout = pool.get('library.user.checkout').__table__()
         exemplary = pool.get('library.book.exemplary').__table__()
         book = cls.__table__()
+        sub_query = exemplary.join(checkout, 'LEFT OUTER',
+            condition=(checkout.exemplary == exemplary.id)
+            ).select(exemplary.id,
+            where=((checkout.return_date == Null) & (checkout.id != Null)))
+
         query = book.join(exemplary,
             condition=(exemplary.book == book.id)
-            ).join(checkout, 'LEFT OUTER',
-            condition=(exemplary.id == checkout.exemplary)
             ).select(book.id,
-            where=(checkout.return_date != Null) | (checkout.id == Null))
+            where=(NotIn(exemplary.id, sub_query)))
         return [('id', 'in' if value else 'not in', query)]
 
 
