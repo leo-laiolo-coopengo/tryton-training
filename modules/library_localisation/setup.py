@@ -35,7 +35,7 @@ version = info.get('version', '0.0.1')
 major_version, minor_version, _ = version.split('.', 2)
 major_version = int(major_version)
 minor_version = int(minor_version)
-name = 'trytond_training_override'
+name = 'trytond_training_override_2'
 
 download_url = 'http://downloads.tryton.org/%s.%s/' % (
     major_version, minor_version)
