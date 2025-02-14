@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <tryton>
     <data>
-        <!-- ########## -->
+        <!-- ########### -->
         <!-- # Shelves # -->
-        <!-- ########## -->
+        <!-- ########### -->
         <record model="ir.ui.view" id="shelf_view_form">
             <field name="model">library.localisation.shelf</field>
             <field name="type">form</field>
@@ -14,21 +14,6 @@
             <field name="type">tree</field>
             <field name="name">shelf_list</field>
         </record>
-        <record model="ir.action.act_window" id="act_open_shelf">
-            <field name="name">Shelves</field>
-            <field name="res_model">library.localisation.shelf</field>
-        </record>
-        <record model="ir.action.act_window.view" id="act_open_shelf_view_list">
-            <field name="sequence" eval="10"/>
-            <field name="view" ref="shelf_view_list"/>
-            <field name="act_window" ref="act_open_shelf"/>
-        </record>
-        <record model="ir.action.act_window.view" id="act_open_shelf_view_form">
-            <field name="sequence" eval="20"/>
-            <field name="view" ref="shelf_view_form"/>
-            <field name="act_window" ref="act_open_shelf"/>
-        </record>
-        <menuitem parent="library.menu_library" sequence="100" action="act_open_shelf" id="menu_open_shelf"/>
         <!-- ######### -->
         <!-- # Rooms # -->
         <!-- ######### -->
@@ -70,6 +55,21 @@
             <field name="type">tree</field>
             <field name="name">floor_list</field>
         </record>
+        <record model="ir.action.act_window" id="act_open_floor">
+            <field name="name">Floors</field>
+            <field name="res_model">library.localisation.floor</field>
+        </record>
+        <record model="ir.action.act_window.view" id="act_open_floor_view_list">
+            <field name="sequence" eval="10"/>
+            <field name="view" ref="floor_view_list"/>
+            <field name="act_window" ref="act_open_floor"/>
+        </record>
+        <record model="ir.action.act_window.view" id="act_open_floor_view_form">
+            <field name="sequence" eval="20"/>
+            <field name="view" ref="floor_view_form"/>
+            <field name="act_window" ref="act_open_floor"/>
+        </record>
+        <menuitem parent="library.menu_library_configuration" sequence="3" action="act_open_floor" id="menu_open_floor"/>
         <!-- ############# -->
         <!-- # Exemplary # -->
         <!-- ############# -->
@@ -82,6 +82,51 @@
             <field name="model">library.book.exemplary</field>
             <field name="inherit" ref="library.exemplary_view_list"/>
             <field name="name">exemplary_list</field>
+        </record>
+        <!-- ########### -->
+        <!-- # Relates # -->
+        <!-- ########### -->
+        <!-- Room -> Shelves -->
+        <record model="ir.action.act_window" id="act_room_shelf_relation">
+            <field name="name">Shelves</field>
+            <field name="res_model">library.localisation.shelf</field>
+            <field name="domain" eval="[('room', '=', Eval('active_id'))]" pyson="1"/>
+        </record>
+        <record model="ir.action.act_window.view" id="act_room_shelf_relation_view1">
+            <field name="sequence" eval="1"/>
+            <field name="view" ref="shelf_view_list"/>
+            <field name="act_window" ref="act_room_shelf_relation"/>
+        </record>
+        <record model="ir.action.act_window.view" id="act_room_shelf_relation_view2">
+            <field name="sequence" eval="1"/>
+            <field name="view" ref="shelf_view_form"/>
+            <field name="act_window" ref="act_room_shelf_relation"/>
+        </record>
+        <record model="ir.action.keyword" id="act_open_room_shelves_keyword">
+            <field name="keyword">form_relate</field>
+            <field name="model">library.localisation.room,-1</field>
+            <field name="action" ref="act_room_shelf_relation"/>
+        </record>
+        <!-- Shelf -> Exemplaries -->
+        <record model="ir.action.act_window" id="act_shelf_exemplary_relation">
+            <field name="name">Exemplaries</field>
+            <field name="res_model">library.book.exemplary</field>
+            <field name="domain" eval="[('shelf', '=', Eval('active_id'))]" pyson="1"/>
+        </record>
+        <record model="ir.action.act_window.view" id="act_shelf_exemplary_relation_view1">
+            <field name="sequence" eval="1"/>
+            <field name="view" ref="exemplary_view_list"/>
+            <field name="act_window" ref="act_shelf_exemplary_relation"/>
+        </record>
+        <record model="ir.action.act_window.view" id="act_shelf_exemplary_relation_view2">
+            <field name="sequence" eval="1"/>
+            <field name="view" ref="exemplary_view_form"/>
+            <field name="act_window" ref="act_shelf_exemplary_relation"/>
+        </record>
+        <record model="ir.action.keyword" id="act_open_shelf_shelves_keyword">
+            <field name="keyword">form_relate</field>
+            <field name="model">library.localisation.shelf,-1</field>
+            <field name="action" ref="act_shelf_exemplary_relation"/>
         </record>
     </data>
 </tryton>
