@@ -57,6 +57,19 @@
             <field name="act_window" ref="act_open_room"/>
         </record>
         <menuitem parent="library.menu_library" sequence="50" action="act_open_room" id="menu_open_room"/>
+        <!-- ########## -->
+        <!-- # Floors # -->
+        <!-- ########## -->
+        <record model="ir.ui.view" id="floor_view_form">
+            <field name="model">library.localisation.floor</field>
+            <field name="type">form</field>
+            <field name="name">floor_form</field>
+        </record>
+        <record model="ir.ui.view" id="floor_view_list">
+            <field name="model">library.localisation.floor</field>
+            <field name="type">tree</field>
+            <field name="name">floor_list</field>
+        </record>
         <!-- ############# -->
         <!-- # Exemplary # -->
         <!-- ############# -->

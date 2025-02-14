@@ -2,5 +2,7 @@
 <form>
     <label name="name"/>
     <field name="name"/>
+    <label name="floor"/>
+    <field name="floor"/>
     <field name="shelfs"/>
 </form>
