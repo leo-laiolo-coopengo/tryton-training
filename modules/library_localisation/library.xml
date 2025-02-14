@@ -2,7 +2,7 @@
 <tryton>
     <data>
         <!-- ########## -->
-        <!-- # Shelfs # -->
+        <!-- # Shelves # -->
         <!-- ########## -->
         <record model="ir.ui.view" id="shelf_view_form">
             <field name="model">library.localisation.shelf</field>
@@ -15,7 +15,7 @@
             <field name="name">shelf_list</field>
         </record>
         <record model="ir.action.act_window" id="act_open_shelf">
-            <field name="name">Shelfs</field>
+            <field name="name">Shelves</field>
             <field name="res_model">library.localisation.shelf</field>
         </record>
         <record model="ir.action.act_window.view" id="act_open_shelf_view_list">

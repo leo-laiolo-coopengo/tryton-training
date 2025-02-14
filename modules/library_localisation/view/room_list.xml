@@ -2,5 +2,5 @@
 <tree>
     <field name="name"/>
     <field name="floor"/>
-    <field name="shelfs"/>
+    <field name="shelves"/>
 </tree>

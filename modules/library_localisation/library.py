@@ -25,7 +25,7 @@ class Room(ModelSQL, ModelView):
     __name__ = 'library.localisation.room'
 
     name = fields.Char('Name', required=True)
-    shelfs = fields.One2Many('library.localisation.shelf', 'room', 'Shelfs')
+    shelves = fields.One2Many('library.localisation.shelf', 'room', 'Shelves')
     floor = fields.Many2One('library.localisation.floor', 'Floor', required=True)
 
 
