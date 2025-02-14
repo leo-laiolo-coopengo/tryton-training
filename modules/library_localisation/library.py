@@ -19,15 +19,21 @@ class Shelf(ModelSQL, ModelView):
     exemplaries = fields.One2Many('library.book.exemplary', 'shelf', 'Exemplaries')
     room = fields.Many2One('library.localisation.room', 'Room', required=True)
 
+    def get_rec_name(self, name):
+        return '%s : %s (%s)' % (self.section, self.room.name, self.room.floor.rec_name)
+
 
 class Room(ModelSQL, ModelView):
     'Room'
     __name__ = 'library.localisation.room'
+    _rec_name = 'name'
 
     name = fields.Char('Name', required=True)
     shelves = fields.One2Many('library.localisation.shelf', 'room', 'Shelves')
     floor = fields.Many2One('library.localisation.floor', 'Floor', required=True)
 
+    def get_rec_name(self, name):
+        return '%s (%s)' % (self.name, self.floor.rec_name)
 
 class Floor(ModelSQL, ModelView):
     'Floor'
