@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<tree>
+    <field name="exemplary" expand="1"/>
+    <field name="entrance_date"/>
+    <field name="exit_date"/>
+</tree>

@@ -10,6 +10,7 @@ def register():
         library.Exemplary,
         library.Room,
         library.Floor,
+        library.Storehouse,
         wizard.MoveExemplaryOnShelfSelection,
         module='library_localisation', type_='model')
 

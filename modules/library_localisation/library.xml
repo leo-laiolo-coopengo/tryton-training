@@ -42,6 +42,34 @@
             <field name="act_window" ref="act_open_room"/>
         </record>
         <menuitem parent="library.menu_library" sequence="50" action="act_open_room" id="menu_open_room"/>
+        <!-- ############## -->
+        <!-- # Storehouse # -->
+        <!-- ############## -->
+        <record model="ir.ui.view" id="storehouse_view_form">
+            <field name="model">library.storehouse</field>
+            <field name="type">form</field>
+            <field name="name">storehouse_form</field>
+        </record>
+        <record model="ir.ui.view" id="storehouse_view_list">
+            <field name="model">library.storehouse</field>
+            <field name="type">tree</field>
+            <field name="name">storehouse_list</field>
+        </record>
+        <record model="ir.action.act_window" id="act_storehouse">
+            <field name="name">Storehouse</field>
+            <field name="res_model">library.storehouse</field>
+        </record>
+        <record model="ir.action.act_window.view" id="act_storehouse_view_list">
+            <field name="sequence" eval="10"/>
+            <field name="view" ref="storehouse_view_list"/>
+            <field name="act_window" ref="act_storehouse"/>
+        </record>
+        <record model="ir.action.act_window.view" id="act_storehouse_view_form">
+            <field name="sequence" eval="20"/>
+            <field name="view" ref="storehouse_view_form"/>
+            <field name="act_window" ref="act_storehouse"/>
+        </record>
+        <menuitem parent="library.menu_library" sequence="7" action="act_storehouse" id="menu_storehouse"/>
         <!-- ########## -->
         <!-- # Floors # -->
         <!-- ########## -->

@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<form>
+    <label name="exemplary"/>
+    <field name="exemplary" colspan="3"/>
+    <label name="entrance_date"/>
+    <field name="entrance_date"/>
+    <label name="exit_date"/>
+    <field name="exit_date"/>
+</form>

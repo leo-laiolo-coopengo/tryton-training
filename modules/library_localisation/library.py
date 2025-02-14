@@ -1,11 +1,14 @@
+import datetime
 from trytond.model import ModelSQL, ModelView, fields
 from trytond.pool import PoolMeta, Pool
+from trytond.pyson import If, Eval, Date
 
 
 __all__ = [
     'Shelf',
     'Room',
     'Floor',
+    'Storehouse',
     'Exemplary',
     ]
 
@@ -49,6 +52,23 @@ class Floor(ModelSQL, ModelView):
         else:
             return str(self.number)
 
+
+class Storehouse(ModelSQL, ModelView):
+    'Storehouse'
+    __name__ = 'library.storehouse'
+
+    entrance_date = fields.Date('Entrance Date', required=True, domain=[
+            ('date', '<=', Date())])
+    exit_date = fields.Date('Exit Date', domain=[
+            If(~Eval('return_date'), [],
+                [('return_date', '<=', Date()),
+                    ('return_date', '>=', Eval('entrance_date'))])],
+        depends=['entrance_date'])
+    exemplary = fields.Many2One('library.book.exemplary', 'Exemplary', required=True)
+
+    @classmethod
+    def default_entrance_date(cls):
+        return datetime.date.today()
 
 class Exemplary(metaclass=PoolMeta):
     __name__ = 'library.book.exemplary'
