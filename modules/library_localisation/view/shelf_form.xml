@@ -4,5 +4,4 @@
     <field name="section"/>
     <label name="room"/>
     <field name="room"/>
-    <field name="exemplaries"/>
 </form>

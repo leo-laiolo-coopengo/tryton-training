@@ -2,5 +2,4 @@
 <form>
     <label name="number"/>
     <field name="number"/>
-    <field name="rooms"/>
 </form>

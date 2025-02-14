@@ -13,6 +13,7 @@ __all__ = [
 class Shelf(ModelSQL, ModelView):
     'Shelf'
     __name__ = 'library.localisation.shelf'
+    _rec_name = 'section'
 
     section = fields.Char('Section', required=True)
     exemplaries = fields.One2Many('library.book.exemplary', 'shelf', 'Exemplaries')

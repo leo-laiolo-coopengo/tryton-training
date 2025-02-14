@@ -1,5 +1,30 @@
 <?xml version="1.0"?>
 <tryton>
     <data>
+        <!-- #################### -->
+        <!-- # Move Exemplaries # -->
+        <!-- #################### -->
+        <record model="ir.action.wizard" id="act_library_move_exemplary">
+            <field name="name">Move Exemplaries</field>
+            <field name="wiz_name">library.localisation.move</field>
+        </record>
+        <record model="ir.action.keyword" id="act_library_move_exemplary_keyword">
+            <field name="keyword">form_action</field>
+            <field name="model">library.book.exemplary,-1</field>
+            <field name="action" ref="act_library_move_exemplary"/>
+        </record>
+        <record model="ir.action.keyword" id="act_library_move_exemplary_shelf_keyword">
+            <field name="keyword">form_action</field>
+            <field name="model">library.localisation.shelf,-1</field>
+            <field name="action" ref="act_library_move_exemplary"/>
+        </record>
+        <!-- ############################## -->
+        <!-- # Select Exemplary and Shelf # -->
+        <!-- ############################## -->
+        <record model="ir.ui.view" id="move_exemplaries_shelf_view_form">
+            <field name="model">library.localisation.move.select</field>
+            <field name="type">form</field>
+            <field name="name">move_exemplaries_shelf_form</field>
+        </record>
     </data>
 </tryton>
