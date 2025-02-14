@@ -6,6 +6,9 @@ from . import wizard
 
 def register():
     Pool.register(
+        library.Shelf,
+        library.Exemplary,
+        library.Room,
         module='library_localisation', type_='model')
 
     Pool.register(

@@ -1,5 +1,74 @@
 <?xml version="1.0"?>
 <tryton>
     <data>
+        <!-- ########## -->
+        <!-- # Shelfs # -->
+        <!-- ########## -->
+        <record model="ir.ui.view" id="shelf_view_form">
+            <field name="model">library.localisation.shelf</field>
+            <field name="type">form</field>
+            <field name="name">shelf_form</field>
+        </record>
+        <record model="ir.ui.view" id="shelf_view_list">
+            <field name="model">library.localisation.shelf</field>
+            <field name="type">tree</field>
+            <field name="name">shelf_list</field>
+        </record>
+        <record model="ir.action.act_window" id="act_open_shelf">
+            <field name="name">Shelfs</field>
+            <field name="res_model">library.localisation.shelf</field>
+        </record>
+        <record model="ir.action.act_window.view" id="act_open_shelf_view_list">
+            <field name="sequence" eval="10"/>
+            <field name="view" ref="shelf_view_list"/>
+            <field name="act_window" ref="act_open_shelf"/>
+        </record>
+        <record model="ir.action.act_window.view" id="act_open_shelf_view_form">
+            <field name="sequence" eval="20"/>
+            <field name="view" ref="shelf_view_form"/>
+            <field name="act_window" ref="act_open_shelf"/>
+        </record>
+        <menuitem parent="library.menu_library" sequence="100" action="act_open_shelf" id="menu_open_shelf"/>
+        <!-- ######### -->
+        <!-- # Rooms # -->
+        <!-- ######### -->
+        <record model="ir.ui.view" id="room_view_form">
+            <field name="model">library.localisation.room</field>
+            <field name="type">form</field>
+            <field name="name">room_form</field>
+        </record>
+        <record model="ir.ui.view" id="room_view_list">
+            <field name="model">library.localisation.room</field>
+            <field name="type">tree</field>
+            <field name="name">room_list</field>
+        </record>
+        <record model="ir.action.act_window" id="act_open_room">
+            <field name="name">Rooms</field>
+            <field name="res_model">library.localisation.room</field>
+        </record>
+        <record model="ir.action.act_window.view" id="act_open_room_view_list">
+            <field name="sequence" eval="10"/>
+            <field name="view" ref="room_view_list"/>
+            <field name="act_window" ref="act_open_room"/>
+        </record>
+        <record model="ir.action.act_window.view" id="act_open_room_view_form">
+            <field name="sequence" eval="20"/>
+            <field name="view" ref="room_view_form"/>
+            <field name="act_window" ref="act_open_room"/>
+        </record>
+        <menuitem parent="library.menu_library" sequence="50" action="act_open_room" id="menu_open_room"/>
+        <!-- ############# -->
+        <!-- # Exemplary # -->
+        <!-- ############# -->
+        <record model="ir.ui.view" id="exemplary_view_form">
+            <field name="model">library.book.exemplary</field>
+            <field name="inherit" ref="library.exemplary_view_form"/>
+            <field name="name">exemplary_form</field>
+        </record>
+        <record model="ir.ui.view" id="exemplary_view_list">
+            <field name="model">library.book.exemplary</field>
+            <field name="inherit" ref="library.exemplary_view_list"/>
+            <field name="name">exemplary_list</field>
+        </record>
     </data>
 </tryton>
