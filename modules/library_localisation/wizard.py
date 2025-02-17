@@ -2,7 +2,7 @@ import datetime
 from trytond.wizard import Wizard, StateView, StateTransition, StateAction, Button
 from trytond.model import ModelView, fields
 from trytond.transaction import Transaction
-from trytond.pyson import PYSONEncoder, Date
+from trytond.pyson import PYSONEncoder, Date, Eval
 from trytond.pool import Pool
 
 
@@ -132,3 +132,70 @@ class StoreExemplarySelect(ModelView):
     entrance_date = fields.Date('Entrance Date', required=True, domain=[
             ('entrance_date', '<=', Date())])
     stocks = fields.Many2Many('library.storehouse', None, None, 'Stocks', readonly=True)
+
+
+class TakeOutExemplary(Wizard):
+    'Take Exemplary out of Storehouse'
+    __name__ = 'library.storehouse.take_out'
+
+    start_state = 'select'
+    select = StateView('library.storehouse.take_out.select',
+        'library_localisation.take_out_exemplaries_view_form', [
+            Button('Cancel', 'end', 'tryton-cancel'),
+            Button('Take out', 'take_out', 'tryton-go-next', default=True)])
+    take_out = StateTransition()
+    open_exemplaries = StateAction('library.act_exemplary')
+
+    @classmethod
+    def __setup__(cls):
+        super().__setup__()
+        cls._error_messages.update({
+                'invalid_model': 'This action should be started from an exemplary.',
+                'exemplary_out_storehouse': 'The following exemplaries are not in '
+                'storehouse: \n%(exemplaries)s',
+                'past_stock': 'The choosen stocks aren\'t actuals: \n%(stocks)s',
+                })
+
+    def default_select(self,name):
+        if Transaction().context.get('active_model', '') == \
+            'library.storehouse':
+            Stockhouse = Pool().get('library.storehouse')
+            stocks = Stockhouse.browse(Transaction().context.get('active_ids'))
+            past_stocks = []
+            stocks_to_move = []
+            for s in stocks:
+                if s.exit_date:
+                    past_stocks.append(s.rec_name)
+                else:
+                    stocks_to_move.append(s.id)
+            if len(past_stocks) > 0:
+                self.raise_user_warning('past_stock_warning' + str(
+                    past_stocks), 'past_stock',
+                {'stocks': ', '.join(past_stocks)})
+            return {
+                'stocks': stocks_to_move,
+                'exit_date': datetime.date.today()
+                }
+        else:
+            self.raise_user_error('invalid_model')
+
+    def transition_take_out(self):
+        Storehouse = Pool().get('library.storehouse')
+        Storehouse.write(list(self.select.stocks), {
+                'exit_date': self.select.exit_date})
+        return 'open_exemplaries'
+
+    def do_open_exemplaries(self, action):
+        action['pyson_domain'] = PYSONEncoder().encode([
+            ('id', 'in', [x.exemplary.id for x in self.select.stocks])])
+        return action, {}
+
+class TakeOutExemplarySelect(ModelView):
+    'Select Exemplary to take_out'
+    __name__ = 'library.storehouse.take_out.select'
+
+    exit_date = fields.Date('Exit Date', required=True, domain=[
+        ('exit_date', '<=', Date()),
+        ('exit_date', '>=', Eval('entrance_date'))])
+    stocks = fields.Many2Many('library.storehouse', None, None, 'Stocks',
+        required=True, domain=[('exit_date', '=', None)])

@@ -69,6 +69,18 @@
             <field name="view" ref="storehouse_view_form"/>
             <field name="act_window" ref="act_storehouse"/>
         </record>
+        <record model="ir.action.act_window.domain" id="act_current_storehouse">
+            <field name="name">Current</field>
+            <field name="sequence" eval="10"/>
+            <field name="domain" eval="[('exit_date', '=', None)]" pyson="1"/>
+            <field name="act_window" ref="act_storehouse"/>
+        </record>
+        <record model="ir.action.act_window.domain" id="act_past_storehouse">
+            <field name="name">Past</field>
+            <field name="sequence" eval="20"/>
+            <field name="domain" eval="[('exit_date', '!=', None)]" pyson="1"/>
+            <field name="act_window" ref="act_storehouse"/>
+        </record>
         <menuitem parent="library.menu_library" sequence="7" action="act_storehouse" id="menu_storehouse"/>
         <!-- ########## -->
         <!-- # Floors # -->

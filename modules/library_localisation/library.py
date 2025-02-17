@@ -73,6 +73,13 @@ class Storehouse(ModelSQL, ModelView):
     def default_entrance_date(cls):
         return datetime.date.today()
 
+    def get_rec_name(self, name):
+        if self.exit_date:
+            return '%s (%s-%s)' % \
+                (self.exemplary.rec_name, self.entrance_date, self.exit_date)
+        else:
+            return '%s (%s)' % (self.exemplary.rec_name, self.entrance_date)
+
 
 class Exemplary(metaclass=PoolMeta):
     __name__ = 'library.book.exemplary'

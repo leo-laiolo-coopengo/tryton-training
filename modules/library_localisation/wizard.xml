@@ -47,5 +47,26 @@
             <field name="type">form</field>
             <field name="name">store_exemplaries_form</field>
         </record>
+
+        <!-- ######################## -->
+        <!-- # Take out Exemplaries # -->
+        <!-- ######################## -->
+        <record model="ir.action.wizard" id="act_library_take_out_exemplary">
+            <field name="name">Take out Exemplaries</field>
+            <field name="wiz_name">library.storehouse.take_out</field>
+        </record>
+        <record model="ir.action.keyword" id="act_library_take_out_stocks_keyword">
+            <field name="keyword">form_action</field>
+            <field name="model">library.storehouse,-1</field>
+            <field name="action" ref="act_library_take_out_exemplary"/>
+        </record>
+        <!-- #################### -->
+        <!-- # Select Exemplary # -->
+        <!-- #################### -->
+        <record model="ir.ui.view" id="take_out_exemplaries_view_form">
+            <field name="model">library.storehouse.take_out.select</field>
+            <field name="type">form</field>
+            <field name="name">take_out_exemplaries_form</field>
+        </record>
     </data>
 </tryton>
