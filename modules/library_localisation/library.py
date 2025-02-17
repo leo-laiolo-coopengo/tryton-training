@@ -20,7 +20,7 @@ class Shelf(ModelSQL, ModelView):
 
     section = fields.Char('Section', required=True)
     exemplaries = fields.One2Many('library.book.exemplary', 'shelf', 'Exemplaries')
-    room = fields.Many2One('library.localisation.room', 'Room', required=True)
+    room = fields.Many2One('library.localisation.room', 'Room', required=True, ondelete='CASCADE')
 
     def get_rec_name(self, name):
         return '%s : %s (%s)' % (self.section, self.room.name, self.room.floor.rec_name)
@@ -33,7 +33,7 @@ class Room(ModelSQL, ModelView):
 
     name = fields.Char('Name', required=True)
     shelves = fields.One2Many('library.localisation.shelf', 'room', 'Shelves')
-    floor = fields.Many2One('library.localisation.floor', 'Floor', required=True)
+    floor = fields.Many2One('library.localisation.floor', 'Floor', required=True, ondelete='CASCADE')
 
     def get_rec_name(self, name):
         return '%s (%s)' % (self.name, self.floor.rec_name)
@@ -58,13 +58,13 @@ class Storehouse(ModelSQL, ModelView):
     __name__ = 'library.storehouse'
 
     entrance_date = fields.Date('Entrance Date', required=True, domain=[
-            ('date', '<=', Date())])
+            ('entrance_date', '<=', Date())])
     exit_date = fields.Date('Exit Date', domain=[
-            If(~Eval('return_date'), [],
-                [('return_date', '<=', Date()),
-                    ('return_date', '>=', Eval('entrance_date'))])],
+            If(~Eval('exit_date'), [],
+                [('exit_date', '<=', Date()),
+                    ('exit_date', '>=', Eval('entrance_date'))])],
         depends=['entrance_date'])
-    exemplary = fields.Many2One('library.book.exemplary', 'Exemplary', required=True)
+    exemplary = fields.Many2One('library.book.exemplary', 'Exemplary', required=True, ondelete='CASCADE')
 
     @classmethod
     def default_entrance_date(cls):
@@ -73,4 +73,4 @@ class Storehouse(ModelSQL, ModelView):
 class Exemplary(metaclass=PoolMeta):
     __name__ = 'library.book.exemplary'
 
-    shelf = fields.Many2One('library.localisation.shelf', 'Shelf')
+    shelf = fields.Many2One('library.localisation.shelf', 'Shelf', ondelete='RESTRICT')
