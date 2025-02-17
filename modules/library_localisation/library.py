@@ -74,3 +74,4 @@ class Exemplary(metaclass=PoolMeta):
     __name__ = 'library.book.exemplary'
 
     shelf = fields.Many2One('library.localisation.shelf', 'Shelf', ondelete='RESTRICT')
+    storehouses = fields.One2Many('library.storehouse', 'exemplary', 'Storehouses')
