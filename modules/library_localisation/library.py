@@ -114,3 +114,24 @@ class Exemplary(metaclass=PoolMeta):
             ).select(exemplary.id,
             where=(storehouse.exit_date == Null) | (storehouse.id == Null))
         return [('id', 'in' if value else 'not in', query)]
+
+    @classmethod
+    def create(cls, values):
+        records = super().create(values)
+        cls.put_in_storehouse(records)
+        return records
+
+    @classmethod
+    def put_in_storehouse(cls, records=None):
+        print(records)
+        Storehouse = Pool().get('library.storehouse')
+        stocks = []
+        for v in records:
+            if not v.shelf:
+                stocks.append(Storehouse(exemplary=v,
+                    entrance_date=datetime.date.today()))
+        if len(stocks) > 0:
+            Storehouse.save(stocks)
+            # raise UserWarning('The following exemplaries were placed in the '
+            # 'storehouse because they had no attributed shelf: \n%s' % stocks)
+        return
