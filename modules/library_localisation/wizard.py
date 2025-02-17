@@ -1,7 +1,8 @@
+import datetime
 from trytond.wizard import Wizard, StateView, StateTransition, StateAction, Button
 from trytond.model import ModelView, fields
 from trytond.transaction import Transaction
-from trytond.pyson import PYSONEncoder
+from trytond.pyson import PYSONEncoder, Date
 from trytond.pool import Pool
 
 
@@ -25,7 +26,7 @@ class MoveExemplaryOnShelf(Wizard):
     def __setup__(cls):
         super().__setup__()
         cls._error_messages.update({
-                'invalid_model': 'This action should be started from a book',
+                'invalid_model': 'This action should be started from an exemplary or a shelf.',
                 })
 
     def default_select(self,name):
@@ -57,5 +58,77 @@ class MoveExemplaryOnShelfSelection(ModelView):
     'Select Exemplary and Shelf'
     __name__ = 'library.localisation.move.select'
 
-    exemplaries = fields.Many2Many('library.book.exemplary', None, None, 'Exemplaries', required=True)
-    shelf = fields.Many2One('library.localisation.shelf', 'Shelf', required=True)
+    exemplaries = fields.Many2Many('library.book.exemplary', None, None,
+        'Exemplaries', required=True)
+    shelf = fields.Many2One('library.localisation.shelf', 'Shelf',
+        required=True)
+
+
+class StoreExemplary(Wizard):
+    'Store Exemplary in Storehouse'
+    __name__ = 'library.storehouse.put_in'
+
+    start_state = 'select'
+    select = StateView('library.storehouse.put_in.select',
+        'library_localisation.store_exemplaries_view_form', [
+            Button('Cancel', 'end', 'tryton-cancel'),
+            Button('Store', 'store', 'tryton-go-next', default=True)])
+    store = StateTransition()
+    open_storehouse = StateAction('library_localisation.act_storehouse')
+
+    @classmethod
+    def __setup__(cls):
+        super().__setup__()
+        cls._error_messages.update({
+                'invalid_model': 'This action should be started from an exemplary.',
+                'exemplary_in_storehouse': 'The following exemplaries are already in '
+                'storehouse: \n%(exemplaries)s',
+                })
+
+    def default_select(self,name):
+        if Transaction().context.get('active_model', '') == \
+            'library.book.exemplary':
+            Exemplary = Pool().get('library.book.exemplary')
+            exemplaries = Exemplary.browse(Transaction().context.get('active_ids'))
+            exemplaries_in_storehouse = []
+            exemplaries_to_move = []
+            for e in exemplaries:
+                if e.is_in_storehouse:
+                    exemplaries_in_storehouse.append(e.rec_name)
+                else:
+                    exemplaries_to_move.append(e.id)
+            if len(exemplaries_in_storehouse) > 0:
+                self.raise_user_warning('exemplary_in_storehouse_warning' + str(
+                    exemplaries_in_storehouse), 'exemplary_in_storehouse',
+                {'exemplaries': ', '.join(exemplaries_in_storehouse)})
+            return {
+                'exemplaries': exemplaries_to_move,
+                'entrance_date': datetime.date.today()
+                }
+        else:
+            self.raise_user_error('invalid_model')
+
+    def transition_store(self):
+        Storehouse = Pool().get('library.storehouse')
+        stocks = []
+        for e in self.select.exemplaries:
+            stocks.append(
+                Storehouse(exemplary=e, entrance_date=self.select.entrance_date))
+        Storehouse.save(stocks)
+        self.select.stocks = stocks
+        return 'open_storehouse'
+
+    def do_open_storehouse(self, action):
+        action['pyson_domain'] = PYSONEncoder().encode([
+            ('id', 'in', [x.id for x in self.select.stocks])])
+        return action, {}
+
+class StoreExemplarySelect(ModelView):
+    'Select Exemplary to store'
+    __name__ = 'library.storehouse.put_in.select'
+
+    exemplaries = fields.Many2Many('library.book.exemplary', None, None,
+        'Exemplaries', required=True, domain=[('is_in_storehouse', '=', False)])
+    entrance_date = fields.Date('Entrance Date', required=True, domain=[
+            ('entrance_date', '<=', Date())])
+    stocks = fields.Many2Many('library.storehouse', None, None, 'Stocks', readonly=True)

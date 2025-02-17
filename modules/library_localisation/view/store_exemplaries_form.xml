@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<form>
+    <field name="exemplaries"/>
+    <label name="entrance_date"/>
+    <field name="entrance_date"/>
+</form>

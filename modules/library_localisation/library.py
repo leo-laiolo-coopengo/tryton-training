@@ -1,7 +1,10 @@
 import datetime
+from sql import Null
+
 from trytond.model import ModelSQL, ModelView, fields
 from trytond.pool import PoolMeta, Pool
 from trytond.pyson import If, Eval, Date
+from trytond.transaction import Transaction
 
 
 __all__ = [
@@ -70,8 +73,37 @@ class Storehouse(ModelSQL, ModelView):
     def default_entrance_date(cls):
         return datetime.date.today()
 
+
 class Exemplary(metaclass=PoolMeta):
     __name__ = 'library.book.exemplary'
 
     shelf = fields.Many2One('library.localisation.shelf', 'Shelf', ondelete='RESTRICT')
-    storehouses = fields.One2Many('library.storehouse', 'exemplary', 'Storehouses')
+    stocks = fields.One2Many('library.storehouse', 'exemplary', 'Storehouses')
+    is_in_storehouse = fields.Function(fields.Boolean('Is in Storehouse'),
+        'getter_is_in_storehouse', searcher='search_is_in_storehouse')
+
+    @classmethod
+    def getter_is_in_storehouse(cls, exemplaries, name):
+        storehouse = Pool().get('library.storehouse').__table__()
+        cursor = Transaction().connection.cursor()
+        result = {x.id: False for x in exemplaries}
+        cursor.execute(*storehouse.select(storehouse.exemplary,
+            where=(storehouse.exit_date == Null) &
+                storehouse.exemplary.in_([x.id for x in exemplaries])))
+        for exemplary_id, in cursor.fetchall():
+            result[exemplary_id] = True
+        return result
+
+    @classmethod
+    def search_is_in_storehouse(cls, name, clause):
+        _, operator, value = clause
+        if operator == '!=':
+            value = not value
+        pool = Pool()
+        storehouse = pool.get('library.storehouse').__table__()
+        exemplary = cls.__table__()
+        query = exemplary.join(storehouse, 'LEFT OUTER',
+            condition=(exemplary.id == storehouse.exemplary)
+            ).select(exemplary.id,
+            where=(storehouse.exit_date == Null) | (storehouse.id == Null))
+        return [('id', 'in' if value else 'not in', query)]
