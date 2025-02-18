@@ -14,10 +14,12 @@ def register():
         wizard.MoveExemplaryOnShelfSelection,
         wizard.StoreExemplarySelect,
         wizard.TakeOutExemplarySelect,
+        wizard.CreateExemplariesParameters,
         module='library_localisation', type_='model')
 
     Pool.register(
         wizard.MoveExemplaryOnShelf,
         wizard.StoreExemplary,
         wizard.TakeOutExemplary,
+        wizard.CreateExemplaries,
         module='library_localisation', type_='wizard')

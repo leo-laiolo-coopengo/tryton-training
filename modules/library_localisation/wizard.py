@@ -2,13 +2,19 @@ import datetime
 from trytond.wizard import Wizard, StateView, StateTransition, StateAction, Button
 from trytond.model import ModelView, fields
 from trytond.transaction import Transaction
-from trytond.pyson import PYSONEncoder, Date, Eval
-from trytond.pool import Pool
+from trytond.pyson import PYSONEncoder, Date, Eval, Less
+from trytond.pool import Pool, PoolMeta
 
 
 __all__ = [
     'MoveExemplaryOnShelf',
     'MoveExemplaryOnShelfSelection',
+    'StoreExemplary',
+    'StoreExemplarySelect',
+    'TakeOutExemplary',
+    'TakeOutExemplarySelect',
+    'CreateExemplaries',
+    'CreateExemplariesParameters',
     ]
 
 class MoveExemplaryOnShelf(Wizard):
@@ -199,3 +205,39 @@ class TakeOutExemplarySelect(ModelView):
         ('exit_date', '>=', Eval('entrance_date'))])
     stocks = fields.Many2Many('library.storehouse', None, None, 'Stocks',
         required=True, domain=[('exit_date', '=', None)])
+
+
+class CreateExemplaries(metaclass=PoolMeta):
+    __name__ = 'library.book.create_exemplaries'
+
+    def transition_create_exemplaries(self):
+        if (self.parameters.acquisition_date and
+                self.parameters.acquisition_date > datetime.date.today()):
+            self.raise_user_error('invalid_date')
+        Exemplary = Pool().get('library.book.exemplary')
+        to_create = []
+        while len(to_create) < self.parameters.number_of_exemplaries:
+            exemplary = Exemplary()
+            exemplary.book = self.parameters.book
+            exemplary.acquisition_date = self.parameters.acquisition_date
+            exemplary.acquisition_price = self.parameters.acquisition_price
+            exemplary.identifier = self.parameters.identifier_start + str(
+                len(to_create) + 1)
+            if len(to_create) >= self.parameters.number_in_storehouse:
+                exemplary.shelf = self.parameters.shelf
+            to_create.append(exemplary)
+        Exemplary.save(to_create)
+        self.parameters.exemplaries = to_create
+        return 'open_exemplaries'
+
+class CreateExemplariesParameters(metaclass=PoolMeta):
+    __name__ = 'library.book.create_exemplaries.parameters'
+
+    number_in_storehouse = fields.Integer('Number in the storehouse',
+        required=True, domain=[
+            ('number_in_storehouse', '<=', Eval('number_of_exemplaries')),
+            ('number_in_storehouse', '>=', 0)],
+        help='The number of exemplaries that will be placed in the '
+        'storehouse.')
+    shelf = fields.Many2One('library.localisation.shelf', 'Shelf', states={
+        'required': Less(Eval('number_in_storehouse', 0), Eval('number_of_exemplaries', 0))})
