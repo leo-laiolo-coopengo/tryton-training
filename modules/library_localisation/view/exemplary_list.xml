@@ -2,6 +2,7 @@
 <data>
     <xpath expr="/tree/field[@name='is_available']" position="after">
         <field name="is_in_storehouse"/>
+        <field name="is_in_quarantine"/>
     </xpath>
     <xpath expr="/tree/field[@name='rec_name']" position="after">
         <field name="shelf"/>

@@ -131,8 +131,11 @@ class Exemplary(metaclass=PoolMeta):
 
     shelf = fields.Many2One('library.localisation.shelf', 'Shelf', ondelete='RESTRICT')
     stocks = fields.One2Many('library.storehouse', 'exemplary', 'Storehouses')
+    quarantines = fields.One2Many('library.quarantine', 'exemplary', 'Quarantines')
     is_in_storehouse = fields.Function(fields.Boolean('Is in Storehouse'),
-        'getter_is_in_storehouse', searcher='search_is_in_storehouse')
+        'getter_is_in_stock', searcher='search_is_in_stock')
+    is_in_quarantine = fields.Function(fields.Boolean('Is in Quarantine'),
+        'getter_is_in_stock', searcher='search_is_in_stock')
 
     @classmethod
     def getter_is_available(cls, exemplaries, name):
@@ -145,12 +148,14 @@ class Exemplary(metaclass=PoolMeta):
         for exemplary_id, in cursor.fetchall():
             result_checkout[exemplary_id] = False
 
-        result_storehouse = cls.getter_is_in_storehouse(exemplaries, name)
+        result_storehouse = cls.getter_is_in_stock(exemplaries, 'is_in_storehouse')
+        result_quarantine = cls.getter_is_in_stock(exemplaries, 'is_in_quarantine')
 
         result = {}
         for e in exemplaries:
             result[e.id] = result_checkout[e.id] and \
-                not(result_storehouse[e.id])
+                not(result_storehouse[e.id]) and \
+                not(result_quarantine[e.id])
         return result
 
     @classmethod
@@ -161,11 +166,14 @@ class Exemplary(metaclass=PoolMeta):
         pool = Pool()
         checkout = pool.get('library.user.checkout').__table__()
         storehouse = pool.get('library.storehouse').__table__()
+        quarantine = pool.get('library.quarantine').__table__()
         exemplary = cls.__table__()
         query = exemplary.join(checkout, 'LEFT OUTER',
             condition=(checkout.exemplary == exemplary.id)
             ).join(storehouse, 'LEFT OUTER',
             condition=(storehouse.exemplary == exemplary.id)
+            ).join(quarantine, 'LEFT OUTER',
+            condition=(quarantine.exemplary == exemplary.id)
             ).select(exemplary.id,
             where=((checkout.return_date == Null) & (checkout.id != Null)) | \
                 ((storehouse.exit_date == Null) & (storehouse.id != Null)))
@@ -173,29 +181,35 @@ class Exemplary(metaclass=PoolMeta):
 
 
     @classmethod
-    def getter_is_in_storehouse(cls, exemplaries, name):
-        storehouse = Pool().get('library.storehouse').__table__()
+    def getter_is_in_stock(cls, exemplaries, name):
+        if name == 'is_in_storehouse':
+            stock = Pool().get('library.storehouse').__table__()
+        else:
+            stock = Pool().get('library.quarantine').__table__()
         cursor = Transaction().connection.cursor()
         result = {x.id: False for x in exemplaries}
-        cursor.execute(*storehouse.select(storehouse.exemplary,
-            where=(storehouse.exit_date == Null) &
-                storehouse.exemplary.in_([x.id for x in exemplaries])))
+        cursor.execute(*stock.select(stock.exemplary,
+            where=(stock.exit_date == Null) &
+                stock.exemplary.in_([x.id for x in exemplaries])))
         for exemplary_id, in cursor.fetchall():
             result[exemplary_id] = True
         return result
 
     @classmethod
-    def search_is_in_storehouse(cls, name, clause):
+    def search_is_in_stock(cls, name, clause):
         _, operator, value = clause
         if operator == '!=':
             value = not value
         pool = Pool()
-        storehouse = pool.get('library.storehouse').__table__()
+        if name == 'is_in_storehouse':
+            stock = pool.get('library.storehouse').__table__()
+        else:
+            stock = pool.get('library.quarantine').__table__()
         exemplary = cls.__table__()
-        query = exemplary.join(storehouse, 'LEFT OUTER',
-            condition=(exemplary.id == storehouse.exemplary)
+        query = exemplary.join(stock, 'LEFT OUTER',
+            condition=(exemplary.id == stock.exemplary)
             ).select(exemplary.id,
-            where=(storehouse.exit_date == Null) & (storehouse.id != Null))
+            where=(stock.exit_date == Null) & (stock.id != Null))
         return [('id', 'in' if value else 'not in', query)]
 
     @classmethod
