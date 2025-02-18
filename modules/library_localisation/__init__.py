@@ -15,6 +15,7 @@ def register():
         wizard.StoreExemplarySelect,
         wizard.TakeOutExemplarySelect,
         wizard.CreateExemplariesParameters,
+        library.Book,
         module='library_localisation', type_='model')
 
     Pool.register(

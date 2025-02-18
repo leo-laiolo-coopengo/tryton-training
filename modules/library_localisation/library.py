@@ -13,6 +13,7 @@ __all__ = [
     'Floor',
     'Storehouse',
     'Exemplary',
+    'Book',
     ]
 
 
@@ -90,6 +91,45 @@ class Exemplary(metaclass=PoolMeta):
         'getter_is_in_storehouse', searcher='search_is_in_storehouse')
 
     @classmethod
+    def getter_is_available(cls, exemplaries, name):
+        checkout = Pool().get('library.user.checkout').__table__()
+        cursor = Transaction().connection.cursor()
+        result_checkout = {x.id: True for x in exemplaries}
+        cursor.execute(*checkout.select(checkout.exemplary,
+                where=(checkout.return_date == Null)
+                & checkout.exemplary.in_([x.id for x in exemplaries])))
+        for exemplary_id, in cursor.fetchall():
+            result_checkout[exemplary_id] = False
+
+        result_storehouse = cls.getter_is_in_storehouse(exemplaries, name)
+
+        result = {}
+        for e in exemplaries:
+            result[e.id] = result_checkout[e.id] and \
+                not(result_storehouse[e.id])
+        return result
+
+    @classmethod
+    def search_is_available(cls, name, clause):
+        _, operator, value = clause
+        if operator == '!=':
+            value = not value
+        pool = Pool()
+        checkout = pool.get('library.user.checkout').__table__()
+        storehouse = pool.get('library.storehouse').__table__()
+        exemplary = cls.__table__()
+        query = exemplary.join(checkout, 'LEFT OUTER',
+            condition=(exemplary.id == checkout.exemplary)
+            ).join(storehouse, 'LEFT OUTER',
+                    condition=(exemplary.id == storehouse.exemplary)
+                ).select(exemplary.id,
+                    where=((checkout.return_date != Null) |
+                        (checkout.id == Null)) & ((storehouse.id == Null) |
+                        (storehouse.exit_date != Null)))
+        return [('id', 'in' if value else 'not in', query)]
+
+
+    @classmethod
     def getter_is_in_storehouse(cls, exemplaries, name):
         storehouse = Pool().get('library.storehouse').__table__()
         cursor = Transaction().connection.cursor()
@@ -135,3 +175,52 @@ class Exemplary(metaclass=PoolMeta):
             # raise UserWarning('The following exemplaries were placed in the '
             # 'storehouse because they had no attributed shelf: \n%s' % stocks)
         return
+
+
+class Book(metaclass=PoolMeta):
+    __name__ = 'library.book'
+
+    @classmethod
+    def getter_is_available(cls, books, name):
+        pool = Pool()
+        checkout = pool.get('library.user.checkout').__table__()
+        exemplary = pool.get('library.book.exemplary').__table__()
+        storehouse = pool.get('library.storehouse').__table__()
+        book = cls.__table__()
+        result = {x.id: False for x in books}
+        cursor = Transaction().connection.cursor()
+        cursor.execute(*book.join(exemplary,
+                condition=(exemplary.book == book.id)
+                ).join(checkout, 'LEFT OUTER',
+                condition=(exemplary.id == checkout.exemplary)
+                ).join(storehouse, 'LEFT OUTER',
+            condition=(exemplary.id == storehouse.exemplary)
+            ).select(book.id,
+                where=((checkout.return_date != Null) |
+                (checkout.id == Null)) & ((storehouse.id == Null) |
+                (storehouse.exit_date != Null))))
+        for book_id, in cursor.fetchall():
+            result[book_id] = True
+        return result
+
+    @classmethod
+    def search_is_available(cls, name, clause):
+        _, operator, value = clause
+        if operator == '!=':
+            value = not value
+        pool = Pool()
+        checkout = pool.get('library.user.checkout').__table__()
+        exemplary = pool.get('library.book.exemplary').__table__()
+        storehouse = pool.get('library.storehouse').__table__()
+        book = cls.__table__()
+        query = book.join(exemplary,
+            condition=(exemplary.book == book.id)
+            ).join(checkout, 'LEFT OUTER',
+            condition=(exemplary.id == checkout.exemplary)
+            ).join(storehouse, 'LEFT OUTER',
+            condition=(exemplary.id == storehouse.exemplary)
+            ).select(book.id,
+            where=((checkout.return_date != Null) |
+            (checkout.id == Null)) & ((storehouse.id == Null) |
+            (storehouse.exit_date != Null)))
+        return [('id', 'in' if value else 'not in', query)]
