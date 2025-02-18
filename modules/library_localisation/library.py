@@ -15,6 +15,7 @@ __all__ = [
     'Storehouse',
     'Exemplary',
     'Book',
+    'Quarantine',
     ]
 
 
@@ -77,10 +78,52 @@ class Storehouse(ModelSQL, ModelView):
 
     def get_rec_name(self, name):
         if self.exit_date:
-            return '%s (%s-%s)' % \
+            return '%s (%s-%s) S' % \
                 (self.exemplary.rec_name, self.entrance_date, self.exit_date)
         else:
-            return '%s (%s)' % (self.exemplary.rec_name, self.entrance_date)
+            return '%s (%s) S' % (self.exemplary.rec_name, self.entrance_date)
+
+
+class Quarantine(ModelSQL, ModelView):
+    'Quarantine'
+    __name__ = 'library.quarantine'
+
+    entrance_date = fields.Date('Entrance Date', required=True, domain=[
+            ('entrance_date', '<=', Date())])
+    exit_date = fields.Date('Exit Date', domain=[
+            If(~Eval('exit_date'), [],
+                [('exit_date', '<=', Date()),
+                    ('exit_date', '>=', Eval('entrance_date'))])],
+        depends=['entrance_date'])
+    expected_exit_date = fields.Function(
+        fields.Date('Expected exit date', help='The date at which the '
+            'exemplary is supposed to be cleaned'),
+        'getter_expected_exit_date', searcher='search_expected_exit_date')
+    exemplary = fields.Many2One('library.book.exemplary', 'Exemplary', required=True, ondelete='CASCADE')
+
+    def getter_expected_exit_date(self, name):
+        return self.entrance_date + datetime.timedelta(days=7)
+
+    @classmethod
+    def search_expected_exit_date(cls, name, clause):
+        _, operator, value = clause
+        if isinstance(value, datetime.date):
+            value = value + datetime.timedelta(days=-7)
+        if isinstance(value, (list, tuple)):
+            value = [(x + datetime.timedelta(days=-7) if x else x)
+                for x in value]
+        return [('entrance_date', operator, value)]
+
+    @classmethod
+    def default_entrance_date(cls):
+        return datetime.date.today()
+
+    def get_rec_name(self, name):
+        if self.exit_date:
+            return '%s (%s-%s) Q' % \
+                (self.exemplary.rec_name, self.entrance_date, self.exit_date)
+        else:
+            return '%s (%s) Q' % (self.exemplary.rec_name, self.entrance_date)
 
 
 class Exemplary(metaclass=PoolMeta):

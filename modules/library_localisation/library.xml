@@ -81,7 +81,53 @@
             <field name="domain" eval="[('exit_date', '!=', None)]" pyson="1"/>
             <field name="act_window" ref="act_storehouse"/>
         </record>
-        <menuitem parent="library.menu_library" sequence="7" action="act_storehouse" id="menu_storehouse"/>
+        <menuitem parent="library.menu_library" sequence="50" action="act_storehouse" id="menu_storehouse"/>
+        <!-- ############## -->
+        <!-- # Quarantine # -->
+        <!-- ############## -->
+        <record model="ir.ui.view" id="quarantine_view_form">
+            <field name="model">library.quarantine</field>
+            <field name="type">form</field>
+            <field name="name">quarantine_form</field>
+        </record>
+        <record model="ir.ui.view" id="quarantine_view_list">
+            <field name="model">library.quarantine</field>
+            <field name="type">tree</field>
+            <field name="name">quarantine_list</field>
+        </record>
+        <record model="ir.action.act_window" id="act_quarantine">
+            <field name="name">Quarantine</field>
+            <field name="res_model">library.quarantine</field>
+        </record>
+        <record model="ir.action.act_window.view" id="act_quarantine_view_list">
+            <field name="sequence" eval="10"/>
+            <field name="view" ref="quarantine_view_list"/>
+            <field name="act_window" ref="act_quarantine"/>
+        </record>
+        <record model="ir.action.act_window.view" id="act_quarantine_view_form">
+            <field name="sequence" eval="20"/>
+            <field name="view" ref="quarantine_view_form"/>
+            <field name="act_window" ref="act_quarantine"/>
+        </record>
+        <record model="ir.action.act_window.domain" id="act_finished_quarantine">
+            <field name="name">Recently finished</field>
+            <field name="sequence" eval="10"/>
+            <field name="domain" eval="[('expected_exit_date', '&lt;', Date())]" pyson="1"/>
+            <field name="act_window" ref="act_quarantine"/>
+        </record>
+        <record model="ir.action.act_window.domain" id="act_current_quarantine">
+            <field name="name">Current</field>
+            <field name="sequence" eval="20"/>
+            <field name="domain" eval="[('exit_date', '=', None)]" pyson="1"/>
+            <field name="act_window" ref="act_quarantine"/>
+        </record>
+        <record model="ir.action.act_window.domain" id="act_past_quarantine">
+            <field name="name">Past</field>
+            <field name="sequence" eval="30"/>
+            <field name="domain" eval="[('exit_date', '!=', None)]" pyson="1"/>
+            <field name="act_window" ref="act_quarantine"/>
+        </record>
+        <menuitem parent="library.menu_library" sequence="60" action="act_quarantine" id="menu_quarantine"/>
         <!-- ########## -->
         <!-- # Floors # -->
         <!-- ########## -->
