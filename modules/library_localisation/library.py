@@ -1,5 +1,6 @@
 import datetime
 from sql import Null
+from sql.aggregate import Min
 
 from trytond.model import ModelSQL, ModelView, fields
 from trytond.pool import PoolMeta, Pool
@@ -119,14 +120,13 @@ class Exemplary(metaclass=PoolMeta):
         storehouse = pool.get('library.storehouse').__table__()
         exemplary = cls.__table__()
         query = exemplary.join(checkout, 'LEFT OUTER',
-            condition=(exemplary.id == checkout.exemplary)
+            condition=(checkout.exemplary == exemplary.id)
             ).join(storehouse, 'LEFT OUTER',
-                    condition=(exemplary.id == storehouse.exemplary)
-                ).select(exemplary.id,
-                    where=((checkout.return_date != Null) |
-                        (checkout.id == Null)) & ((storehouse.id == Null) |
-                        (storehouse.exit_date != Null)))
-        return [('id', 'in' if value else 'not in', query)]
+            condition=(storehouse.exemplary == exemplary.id)
+            ).select(exemplary.id,
+            where=((checkout.return_date == Null) & (checkout.id != Null)) | \
+                ((storehouse.exit_date == Null) & (storehouse.id != Null)))
+        return [('id', 'in' if not value else 'not in', query)]
 
 
     @classmethod
@@ -152,7 +152,7 @@ class Exemplary(metaclass=PoolMeta):
         query = exemplary.join(storehouse, 'LEFT OUTER',
             condition=(exemplary.id == storehouse.exemplary)
             ).select(exemplary.id,
-            where=(storehouse.exit_date == Null) | (storehouse.id == Null))
+            where=(storehouse.exit_date == Null) & (storehouse.id != Null))
         return [('id', 'in' if value else 'not in', query)]
 
     @classmethod
