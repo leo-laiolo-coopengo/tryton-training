@@ -77,5 +77,47 @@
             <field name="inherit" ref="library.create_exemplaries_parameters_view_form"/>
             <field name="name">create_exemplaries_parameters_form</field>
         </record>
+
+        <!-- ################################# -->
+        <!-- # Put Exemplaries in Quarantine # -->
+        <!-- ################################# -->
+        <record model="ir.action.wizard" id="act_library_quarantine_exemplary">
+            <field name="name">Put in Quarantine</field>
+            <field name="wiz_name">library.quarantine.lock_down</field>
+        </record>
+        <record model="ir.action.keyword" id="act_library_quarantine_exemplary_keyword">
+            <field name="keyword">form_action</field>
+            <field name="model">library.book.exemplary,-1</field>
+            <field name="action" ref="act_library_quarantine_exemplary"/>
+        </record>
+        <!-- #################### -->
+        <!-- # Select Exemplary # -->
+        <!-- #################### -->
+        <record model="ir.ui.view" id="quarantine_exemplaries_view_form">
+            <field name="model">library.quarantine.lock_down.select</field>
+            <field name="type">form</field>
+            <field name="name">store_exemplaries_form</field>
+        </record>
+
+        <!-- ####################################### -->
+        <!-- # Unleash Exemplaries from Quarantine # -->
+        <!-- ####################################### -->
+        <record model="ir.action.wizard" id="act_library_unleash_exemplary">
+            <field name="name">Unleash from Quarantine</field>
+            <field name="wiz_name">library.quarantine.unleash</field>
+        </record>
+        <record model="ir.action.keyword" id="act_library_unleash_stocks_keyword">
+            <field name="keyword">form_action</field>
+            <field name="model">library.quarantine,-1</field>
+            <field name="action" ref="act_library_unleash_exemplary"/>
+        </record>
+        <!-- #################### -->
+        <!-- # Select Exemplary # -->
+        <!-- #################### -->
+        <record model="ir.ui.view" id="unleash_exemplaries_view_form">
+            <field name="model">library.quarantine.unleash.select</field>
+            <field name="type">form</field>
+            <field name="name">take_out_exemplaries_form</field>
+        </record>
     </data>
 </tryton>

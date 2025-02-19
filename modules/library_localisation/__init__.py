@@ -17,6 +17,8 @@ def register():
         wizard.CreateExemplariesParameters,
         library.Book,
         library.Quarantine,
+        wizard.QuarantineUnleashExemplarySelect,
+        wizard.QuarantineLockDownExemplarySelect,
         module='library_localisation', type_='model')
 
     Pool.register(
@@ -24,4 +26,6 @@ def register():
         wizard.StoreExemplary,
         wizard.TakeOutExemplary,
         wizard.CreateExemplaries,
+        wizard.QuarantineLockDownExemplary,
+        wizard.QuarantineUnleashExemplary,
         module='library_localisation', type_='wizard')

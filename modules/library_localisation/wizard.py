@@ -15,6 +15,10 @@ __all__ = [
     'TakeOutExemplarySelect',
     'CreateExemplaries',
     'CreateExemplariesParameters',
+    'QuarantineLockDownExemplary',
+    'QuarantineLockDownExemplarySelect',
+    'QuarantineUnleashExemplary',
+    'QuarantineUnleashExemplarySelect',
     ]
 
 class MoveExemplaryOnShelf(Wizard):
@@ -241,3 +245,140 @@ class CreateExemplariesParameters(metaclass=PoolMeta):
         'storehouse.')
     shelf = fields.Many2One('library.localisation.shelf', 'Shelf', states={
         'required': Less(Eval('number_in_storehouse', 0), Eval('number_of_exemplaries', 0))})
+
+
+class QuarantineLockDownExemplary(Wizard):
+    'Put Exemplary in Quarantine'
+    __name__ = 'library.quarantine.lock_down'
+
+    start_state = 'select'
+    select = StateView('library.quarantine.lock_down.select',
+        'library_localisation.quarantine_exemplaries_view_form', [
+            Button('Cancel', 'end', 'tryton-cancel'),
+            Button('Begin Quarantine', 'lock_down', 'tryton-go-next', default=True)])
+    lock_down = StateTransition()
+    open_quarantine = StateAction('library_localisation.act_quarantine')
+
+    @classmethod
+    def __setup__(cls):
+        super().__setup__()
+        cls._error_messages.update({
+                'invalid_model': 'This action should be started from an exemplary.',
+                'exemplary_unavailable': 'The following exemplaries are '
+                'unavailable: \n%(exemplaries)s',
+                })
+
+    def default_select(self,name):
+        if Transaction().context.get('active_model', '') == \
+            'library.book.exemplary':
+            Exemplary = Pool().get('library.book.exemplary')
+            exemplaries = Exemplary.browse(Transaction().context.get('active_ids'))
+            exemplaries_unavailable = []
+            exemplaries_to_move = []
+            for e in exemplaries:
+                if e.is_in_quarantine:
+                    exemplaries_unavailable.append(e.rec_name)
+                else:
+                    exemplaries_to_move.append(e.id)
+            if len(exemplaries_unavailable) > 0:
+                self.raise_user_warning('exemplary_unavailable_warning' + str(
+                    exemplaries_unavailable), 'exemplary_unavailable',
+                {'exemplaries': ', '.join(exemplaries_unavailable)})
+            return {
+                'exemplaries': exemplaries_to_move,
+                'entrance_date': datetime.date.today()
+                }
+        else:
+            self.raise_user_error('invalid_model')
+
+    def transition_lock_down(self):
+        Quarantine = Pool().get('library.quarantine')
+        stocks = []
+        for e in self.select.exemplaries:
+            stocks.append(
+                Quarantine(exemplary=e, entrance_date=self.select.entrance_date))
+        Quarantine.save(stocks)
+        self.select.stocks = stocks
+        return 'open_quarantine'
+
+    def do_open_quarantine(self, action):
+        action['pyson_domain'] = PYSONEncoder().encode([
+            ('id', 'in', [x.id for x in self.select.stocks])])
+        return action, {}
+
+class QuarantineLockDownExemplarySelect(ModelView):
+    'Select Exemplary to store'
+    __name__ = 'library.quarantine.lock_down.select'
+
+    exemplaries = fields.Many2Many('library.book.exemplary', None, None,
+        'Exemplaries', required=True, domain=[('is_in_quarantine', '=', False)])
+    entrance_date = fields.Date('Entrance Date', required=True, domain=[
+            ('entrance_date', '<=', Date())])
+    stocks = fields.Many2Many('library.quarantine', None, None, 'Quarantine', readonly=True)
+
+
+class QuarantineUnleashExemplary(Wizard):
+    'Unleash Exemplary from Quarantine'
+    __name__ = 'library.quarantine.unleash'
+
+    start_state = 'select'
+    select = StateView('library.quarantine.unleash.select',
+        'library_localisation.unleash_exemplaries_view_form', [
+            Button('Cancel', 'end', 'tryton-cancel'),
+            Button('Finish quarantine', 'unleash', 'tryton-go-next', default=True)])
+    unleash = StateTransition()
+    open_exemplaries = StateAction('library.act_exemplary')
+
+    @classmethod
+    def __setup__(cls):
+        super().__setup__()
+        cls._error_messages.update({
+                'invalid_model': 'This action should be started from an exemplary.',
+                'exemplary_out_quarantine': 'The following exemplaries are not in '
+                'quarantine: \n%(exemplaries)s',
+                'past_stock': 'The choosen stocks aren\'t actuals: \n%(stocks)s',
+                })
+
+    def default_select(self,name):
+        if Transaction().context.get('active_model', '') == \
+            'library.quarantine':
+            Quarantine = Pool().get('library.quarantine')
+            stocks = Quarantine.browse(Transaction().context.get('active_ids'))
+            past_stocks = []
+            stocks_to_move = []
+            for s in stocks:
+                if s.exit_date:
+                    past_stocks.append(s.rec_name)
+                else:
+                    stocks_to_move.append(s.id)
+            if len(past_stocks) > 0:
+                self.raise_user_warning('past_stock_warning' + str(
+                    past_stocks), 'past_stock',
+                {'stocks': ', '.join(past_stocks)})
+            return {
+                'stocks': stocks_to_move,
+                'exit_date': datetime.date.today()
+                }
+        else:
+            self.raise_user_error('invalid_model')
+
+    def transition_unleash(self):
+        Quarantine = Pool().get('library.quarantine')
+        Quarantine.write(list(self.select.stocks), {
+                'exit_date': self.select.exit_date})
+        return 'open_exemplaries'
+
+    def do_open_exemplaries(self, action):
+        action['pyson_domain'] = PYSONEncoder().encode([
+            ('id', 'in', [x.exemplary.id for x in self.select.stocks])])
+        return action, {}
+
+class QuarantineUnleashExemplarySelect(ModelView):
+    'Select Exemplary to unleash'
+    __name__ = 'library.quarantine.unleash.select'
+
+    exit_date = fields.Date('Exit Date', required=True, domain=[
+        ('exit_date', '<=', Date()),
+        ('exit_date', '>=', Eval('entrance_date'))])
+    stocks = fields.Many2Many('library.quarantine', None, None, 'Stocks',
+        required=True, domain=[('exit_date', '=', None)])

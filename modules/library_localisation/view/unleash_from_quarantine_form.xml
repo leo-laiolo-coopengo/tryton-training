@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<form>
+    <field name="stocks"/>
+    <label name="exit_date"/>
+    <field name="exit_date"/>
+    <label name="expected_exit_date"/>
+    <field name="expected_exit_date"/>
+</form>
