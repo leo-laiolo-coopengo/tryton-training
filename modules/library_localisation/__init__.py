@@ -28,4 +28,5 @@ def register():
         wizard.CreateExemplaries,
         wizard.QuarantineLockDownExemplary,
         wizard.QuarantineUnleashExemplary,
+        wizard.Return,
         module='library_localisation', type_='wizard')

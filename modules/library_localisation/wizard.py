@@ -19,6 +19,7 @@ __all__ = [
     'QuarantineLockDownExemplarySelect',
     'QuarantineUnleashExemplary',
     'QuarantineUnleashExemplarySelect',
+    'Return',
     ]
 
 class MoveExemplaryOnShelf(Wizard):
@@ -167,6 +168,7 @@ class TakeOutExemplary(Wizard):
                 })
 
     def default_select(self,name):
+        # TODO UX: can't take out a book that doesn't have any shelf -> warn + select shelf? Reuse MoveShelf?
         if Transaction().context.get('active_model', '') == \
             'library.storehouse':
             Stockhouse = Pool().get('library.storehouse')
@@ -340,6 +342,7 @@ class QuarantineUnleashExemplary(Wizard):
                 })
 
     def default_select(self,name):
+        # TODO UX: Warn the user that books will be unleashed before the end of their quarantine
         if Transaction().context.get('active_model', '') == \
             'library.quarantine':
             Quarantine = Pool().get('library.quarantine')
@@ -382,3 +385,27 @@ class QuarantineUnleashExemplarySelect(ModelView):
         ('exit_date', '>=', Eval('entrance_date'))])
     stocks = fields.Many2Many('library.quarantine', None, None, 'Stocks',
         required=True, domain=[('exit_date', '=', None)])
+
+class Return(Wizard):
+    'Return'
+    __name__ = 'library.user.return'
+
+    put_in_quarantine = StateTransition()
+
+    def transition_return_(self):
+        Checkout = Pool().get('library.user.checkout')
+        Checkout.write(list(self.select_checkouts.checkouts), {
+                'return_date': self.select_checkouts.date})
+        return 'put_in_quarantine'
+
+    def transition_put_in_quarantine(self):
+        Quarantine = Pool().get('library.quarantine')
+        to_create = []
+        for c in self.select_checkouts.checkouts:
+            to_create.append(Quarantine(entrance_date=datetime.date.today(),
+                exemplary=c.exemplary))
+        Quarantine.save(to_create)
+        return 'end'
+
+    def end(self):
+        return 'reload'
