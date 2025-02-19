@@ -1,6 +1,6 @@
 import datetime
 from sql import Null
-from sql.aggregate import Min
+from sql.operators import NotIn
 
 from trytond.model import ModelSQL, ModelView, fields
 from trytond.pool import PoolMeta, Pool
@@ -264,20 +264,26 @@ class Book(metaclass=PoolMeta):
         storehouse = pool.get('library.storehouse').__table__()
         quarantine = pool.get('library.quarantine').__table__()
         book = cls.__table__()
+
+        sub_query = exemplary.join(checkout, 'LEFT OUTER',
+            condition=(checkout.exemplary == exemplary.id)
+            ).join(storehouse, 'LEFT OUTER',
+            condition=(storehouse.exemplary == exemplary.id)
+            ).join(quarantine, 'LEFT OUTER',
+            condition=(quarantine.exemplary == exemplary.id)
+            ).select(exemplary.id,
+            where=((checkout.return_date == Null) & (checkout.id != Null)) | \
+                ((storehouse.exit_date == Null) & (storehouse.id != Null)) | \
+                ((quarantine.exit_date == Null) & (quarantine.id != Null)))
+
+        query = book.join(exemplary,
+            condition=(exemplary.book == book.id)
+            ).select(book.id,
+            where=(NotIn(exemplary.id, sub_query)))
+
         result = {x.id: False for x in books}
         cursor = Transaction().connection.cursor()
-        cursor.execute(*book.join(exemplary,
-                condition=(exemplary.book == book.id)
-                ).join(checkout, 'LEFT OUTER',
-                condition=(exemplary.id == checkout.exemplary)
-                ).join(storehouse, 'LEFT OUTER',
-            condition=(exemplary.id == storehouse.exemplary)
-                ).join(quarantine, 'LEFT OUTER',
-            condition=(exemplary.id == quarantine.exemplary)
-            ).select(book.id,
-                where=((checkout.return_date != Null) | (checkout.id == Null))
-                & ((storehouse.id == Null) | (storehouse.exit_date != Null))
-                & ((quarantine.id == Null) | (quarantine.exit_date != Null))))
+        cursor.execute(*query)
         for book_id, in cursor.fetchall():
             result[book_id] = True
         return result
@@ -293,16 +299,20 @@ class Book(metaclass=PoolMeta):
         storehouse = pool.get('library.storehouse').__table__()
         quarantine = pool.get('library.quarantine').__table__()
         book = cls.__table__()
+
+        sub_query = exemplary.join(checkout, 'LEFT OUTER',
+            condition=(checkout.exemplary == exemplary.id)
+            ).join(storehouse, 'LEFT OUTER',
+            condition=(storehouse.exemplary == exemplary.id)
+            ).join(quarantine, 'LEFT OUTER',
+            condition=(quarantine.exemplary == exemplary.id)
+            ).select(exemplary.id,
+            where=((checkout.return_date == Null) & (checkout.id != Null)) | \
+                ((storehouse.exit_date == Null) & (storehouse.id != Null)) | \
+                ((quarantine.exit_date == Null) & (quarantine.id != Null)))
+
         query = book.join(exemplary,
             condition=(exemplary.book == book.id)
-            ).join(checkout, 'LEFT OUTER',
-            condition=(exemplary.id == checkout.exemplary)
-            ).join(storehouse, 'LEFT OUTER',
-            condition=(exemplary.id == storehouse.exemplary)
-            ).join(quarantine, 'LEFT OUTER',
-            condition=(exemplary.id == quarantine.exemplary)
             ).select(book.id,
-            where=((checkout.return_date != Null) | (checkout.id == Null))
-                & ((storehouse.id == Null) | (storehouse.exit_date != Null))
-                & ((quarantine.id == Null) | (quarantine.exit_date != Null)))
+            where=(NotIn(exemplary.id, sub_query)))
         return [('id', 'in' if value else 'not in', query)]
