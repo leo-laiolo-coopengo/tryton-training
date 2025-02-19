@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <data>
     <xpath expr="/tree/field[@name='is_available']" position="after">
+        <field name="is_borrowed"/>
         <field name="is_in_storehouse"/>
         <field name="is_in_quarantine"/>
     </xpath>

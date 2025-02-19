@@ -136,49 +136,33 @@ class Exemplary(metaclass=PoolMeta):
         'getter_is_in_stock', searcher='search_is_in_stock')
     is_in_quarantine = fields.Function(fields.Boolean('Is in Quarantine'),
         'getter_is_in_stock', searcher='search_is_in_stock')
+    is_borrowed = fields.Function(fields.Boolean('Is Borrowed'),
+        'getter_is_borrowed', searcher='search_is_borrowed')
 
     @classmethod
-    def getter_is_available(cls, exemplaries, name):
+    def getter_is_borrowed(cls, exemplaries, name=None):
         checkout = Pool().get('library.user.checkout').__table__()
         cursor = Transaction().connection.cursor()
-        result_checkout = {x.id: True for x in exemplaries}
+        result_checkout = {x.id: False for x in exemplaries}
         cursor.execute(*checkout.select(checkout.exemplary,
                 where=(checkout.return_date == Null)
                 & checkout.exemplary.in_([x.id for x in exemplaries])))
         for exemplary_id, in cursor.fetchall():
-            result_checkout[exemplary_id] = False
-
-        result_storehouse = cls.getter_is_in_stock(exemplaries, 'is_in_storehouse')
-        result_quarantine = cls.getter_is_in_stock(exemplaries, 'is_in_quarantine')
-
-        result = {}
-        for e in exemplaries:
-            result[e.id] = result_checkout[e.id] and \
-                not(result_storehouse[e.id]) and \
-                not(result_quarantine[e.id])
-        return result
+            result_checkout[exemplary_id] = True
+        return result_checkout
 
     @classmethod
-    def search_is_available(cls, name, clause):
+    def search_is_borrowed(cls, name, clause):
         _, operator, value = clause
         if operator == '!=':
             value = not value
-        pool = Pool()
-        checkout = pool.get('library.user.checkout').__table__()
-        storehouse = pool.get('library.storehouse').__table__()
-        quarantine = pool.get('library.quarantine').__table__()
+        checkout = Pool().get('library.user.checkout')
         exemplary = cls.__table__()
         query = exemplary.join(checkout, 'LEFT OUTER',
-            condition=(checkout.exemplary == exemplary.id)
-            ).join(storehouse, 'LEFT OUTER',
-            condition=(storehouse.exemplary == exemplary.id)
-            ).join(quarantine, 'LEFT OUTER',
-            condition=(quarantine.exemplary == exemplary.id)
+            condition=(exemplary.id == checkout.exemplary)
             ).select(exemplary.id,
-            where=((checkout.return_date == Null) & (checkout.id != Null)) | \
-                ((storehouse.exit_date == Null) & (storehouse.id != Null)))
-        return [('id', 'in' if not value else 'not in', query)]
-
+            where=(checkout.exit_date == Null) & (checkout.id != Null))
+        return [('id', 'in' if value else 'not in', query)]
 
     @classmethod
     def getter_is_in_stock(cls, exemplaries, name):
@@ -213,6 +197,41 @@ class Exemplary(metaclass=PoolMeta):
         return [('id', 'in' if value else 'not in', query)]
 
     @classmethod
+    def getter_is_available(cls, exemplaries, name):
+        result_checkout = cls.getter_is_borrowed(exemplaries)
+        result_storehouse = cls.getter_is_in_stock(exemplaries, 'is_in_storehouse')
+        result_quarantine = cls.getter_is_in_stock(exemplaries, 'is_in_quarantine')
+
+        result = {}
+        for e in exemplaries:
+            result[e.id] = not(result_checkout[e.id]) and \
+                not(result_storehouse[e.id]) and \
+                not(result_quarantine[e.id])
+        return result
+
+    @classmethod
+    def search_is_available(cls, name, clause):
+        _, operator, value = clause
+        if operator == '!=':
+            value = not value
+        pool = Pool()
+        checkout = pool.get('library.user.checkout').__table__()
+        storehouse = pool.get('library.storehouse').__table__()
+        quarantine = pool.get('library.quarantine').__table__()
+        exemplary = cls.__table__()
+        query = exemplary.join(checkout, 'LEFT OUTER',
+            condition=(checkout.exemplary == exemplary.id)
+            ).join(storehouse, 'LEFT OUTER',
+            condition=(storehouse.exemplary == exemplary.id)
+            ).join(quarantine, 'LEFT OUTER',
+            condition=(quarantine.exemplary == exemplary.id)
+            ).select(exemplary.id,
+            where=((checkout.return_date == Null) & (checkout.id != Null)) | \
+                ((storehouse.exit_date == Null) & (storehouse.id != Null)) | \
+                ((quarantine.exit_date == Null) & (quarantine.id != Null)))
+        return [('id', 'in' if not value else 'not in', query)]
+
+    @classmethod
     def create(cls, values):
         records = super().create(values)
         cls.put_in_storehouse(records)
@@ -243,6 +262,7 @@ class Book(metaclass=PoolMeta):
         checkout = pool.get('library.user.checkout').__table__()
         exemplary = pool.get('library.book.exemplary').__table__()
         storehouse = pool.get('library.storehouse').__table__()
+        quarantine = pool.get('library.quarantine').__table__()
         book = cls.__table__()
         result = {x.id: False for x in books}
         cursor = Transaction().connection.cursor()
@@ -252,10 +272,12 @@ class Book(metaclass=PoolMeta):
                 condition=(exemplary.id == checkout.exemplary)
                 ).join(storehouse, 'LEFT OUTER',
             condition=(exemplary.id == storehouse.exemplary)
+                ).join(quarantine, 'LEFT OUTER',
+            condition=(exemplary.id == quarantine.exemplary)
             ).select(book.id,
-                where=((checkout.return_date != Null) |
-                (checkout.id == Null)) & ((storehouse.id == Null) |
-                (storehouse.exit_date != Null))))
+                where=((checkout.return_date != Null) | (checkout.id == Null))
+                & ((storehouse.id == Null) | (storehouse.exit_date != Null))
+                & ((quarantine.id == Null) | (quarantine.exit_date != Null))))
         for book_id, in cursor.fetchall():
             result[book_id] = True
         return result
@@ -269,6 +291,7 @@ class Book(metaclass=PoolMeta):
         checkout = pool.get('library.user.checkout').__table__()
         exemplary = pool.get('library.book.exemplary').__table__()
         storehouse = pool.get('library.storehouse').__table__()
+        quarantine = pool.get('library.quarantine').__table__()
         book = cls.__table__()
         query = book.join(exemplary,
             condition=(exemplary.book == book.id)
@@ -276,8 +299,10 @@ class Book(metaclass=PoolMeta):
             condition=(exemplary.id == checkout.exemplary)
             ).join(storehouse, 'LEFT OUTER',
             condition=(exemplary.id == storehouse.exemplary)
+            ).join(quarantine, 'LEFT OUTER',
+            condition=(exemplary.id == quarantine.exemplary)
             ).select(book.id,
-            where=((checkout.return_date != Null) |
-            (checkout.id == Null)) & ((storehouse.id == Null) |
-            (storehouse.exit_date != Null)))
+            where=((checkout.return_date != Null) | (checkout.id == Null))
+                & ((storehouse.id == Null) | (storehouse.exit_date != Null))
+                & ((quarantine.id == Null) | (quarantine.exit_date != Null)))
         return [('id', 'in' if value else 'not in', query)]

@@ -91,8 +91,8 @@ class StoreExemplary(Wizard):
         super().__setup__()
         cls._error_messages.update({
                 'invalid_model': 'This action should be started from an exemplary.',
-                'exemplary_in_storehouse': 'The following exemplaries are already in '
-                'storehouse: \n%(exemplaries)s',
+                'exemplary_unavailable': 'The following exemplaries are '
+                'unavailable: \n%(exemplaries)s',
                 })
 
     def default_select(self,name):
@@ -100,17 +100,17 @@ class StoreExemplary(Wizard):
             'library.book.exemplary':
             Exemplary = Pool().get('library.book.exemplary')
             exemplaries = Exemplary.browse(Transaction().context.get('active_ids'))
-            exemplaries_in_storehouse = []
+            exemplary_unavailable = []
             exemplaries_to_move = []
             for e in exemplaries:
-                if e.is_in_storehouse:
-                    exemplaries_in_storehouse.append(e.rec_name)
-                else:
+                if e.is_available:
                     exemplaries_to_move.append(e.id)
-            if len(exemplaries_in_storehouse) > 0:
-                self.raise_user_warning('exemplary_in_storehouse_warning' + str(
-                    exemplaries_in_storehouse), 'exemplary_in_storehouse',
-                {'exemplaries': ', '.join(exemplaries_in_storehouse)})
+                else:
+                    exemplary_unavailable.append(e.rec_name)
+            if len(exemplary_unavailable) > 0:
+                self.raise_user_warning('exemplary_unavailable_warning' + str(
+                    exemplary_unavailable), 'exemplary_unavailable',
+                {'exemplaries': ', '.join(exemplary_unavailable)})
             return {
                 'exemplaries': exemplaries_to_move,
                 'entrance_date': datetime.date.today()
@@ -138,7 +138,7 @@ class StoreExemplarySelect(ModelView):
     __name__ = 'library.storehouse.put_in.select'
 
     exemplaries = fields.Many2Many('library.book.exemplary', None, None,
-        'Exemplaries', required=True, domain=[('is_in_storehouse', '=', False)])
+        'Exemplaries', required=True, domain=[('is_available', '=', True)])
     entrance_date = fields.Date('Entrance Date', required=True, domain=[
             ('entrance_date', '<=', Date())])
     stocks = fields.Many2Many('library.storehouse', None, None, 'Stocks', readonly=True)
@@ -276,7 +276,7 @@ class QuarantineLockDownExemplary(Wizard):
             exemplaries_unavailable = []
             exemplaries_to_move = []
             for e in exemplaries:
-                if e.is_in_quarantine:
+                if e.is_in_quarantine or e.is_borrowed:
                     exemplaries_unavailable.append(e.rec_name)
                 else:
                     exemplaries_to_move.append(e.id)
@@ -311,7 +311,7 @@ class QuarantineLockDownExemplarySelect(ModelView):
     __name__ = 'library.quarantine.lock_down.select'
 
     exemplaries = fields.Many2Many('library.book.exemplary', None, None,
-        'Exemplaries', required=True, domain=[('is_in_quarantine', '=', False)])
+        'Exemplaries', required=True, domain=[('is_in_quarantine', '=', False), ('is_borrowed', '=', False)])
     entrance_date = fields.Date('Entrance Date', required=True, domain=[
             ('entrance_date', '<=', Date())])
     stocks = fields.Many2Many('library.quarantine', None, None, 'Quarantine', readonly=True)
