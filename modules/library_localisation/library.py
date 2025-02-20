@@ -243,8 +243,17 @@ class Exemplary(metaclass=PoolMeta):
         return records
 
     @classmethod
+    def write(cls, records, values, *args):
+        super().write(records, values, *args)
+        actions = iter((records, values) + args)
+        all_records = []
+        for r, _ in zip(actions, actions):
+            if r:
+                all_records += r
+        cls.put_in_storehouse(all_records)
+
+    @classmethod
     def put_in_storehouse(cls, records=None):
-        print(records)
         Storehouse = Pool().get('library.storehouse')
         stocks = []
         for e in records:
