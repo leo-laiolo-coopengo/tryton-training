@@ -99,23 +99,23 @@
             <field name="name">store_exemplaries_form</field>
         </record>
 
-        <!-- ####################################### -->
-        <!-- # Unleash Exemplaries from Quarantine # -->
-        <!-- ####################################### -->
-        <record model="ir.action.wizard" id="act_library_unleash_exemplary">
-            <field name="name">Unleash from Quarantine</field>
-            <field name="wiz_name">library.quarantine.unleash</field>
+        <!-- ###################################### -->
+        <!-- # Move Exemplaries out of Quarantine # -->
+        <!-- ###################################### -->
+        <record model="ir.action.wizard" id="act_library_quarantine_out_exemplary">
+            <field name="name">Move out of Quarantine</field>
+            <field name="wiz_name">library.quarantine.move_out</field>
         </record>
-        <record model="ir.action.keyword" id="act_library_unleash_stocks_keyword">
+        <record model="ir.action.keyword" id="act_library_quarantine_out_stocks_keyword">
             <field name="keyword">form_action</field>
             <field name="model">library.quarantine,-1</field>
-            <field name="action" ref="act_library_unleash_exemplary"/>
+            <field name="action" ref="act_library_quarantine_out_exemplary"/>
         </record>
         <!-- #################### -->
         <!-- # Select Exemplary # -->
         <!-- #################### -->
-        <record model="ir.ui.view" id="unleash_exemplaries_view_form">
-            <field name="model">library.quarantine.unleash.select</field>
+        <record model="ir.ui.view" id="quarantine_out_exemplaries_view_form">
+            <field name="model">library.quarantine.move_out.select</field>
             <field name="type">form</field>
             <field name="name">take_out_exemplaries_form</field>
         </record>

@@ -363,15 +363,15 @@ class QuarantineLockDownExemplarySelect(ModelView):
 
 class QuarantineUnleashExemplary(Wizard):
     'Unleash Exemplary from Quarantine'
-    __name__ = 'library.quarantine.unleash'
+    __name__ = 'library.quarantine.move_out'
 
     start_state = 'select'
-    select = StateView('library.quarantine.unleash.select',
-        'library_localisation.unleash_exemplaries_view_form', [
+    select = StateView('library.quarantine.move_out.select',
+        'library_localisation.quarantine_out_exemplaries_view_form', [
             Button('Cancel', 'end', 'tryton-cancel'),
-            Button('Finish quarantine', 'unleash', 'tryton-go-next',
+            Button('Finish quarantine', 'move_out', 'tryton-go-next',
                 default=True)])
-    unleash = StateTransition()
+    move_out= StateTransition()
     open_exemplaries = StateAction('library.act_exemplary')
 
     @classmethod
@@ -412,7 +412,7 @@ class QuarantineUnleashExemplary(Wizard):
         else:
             self.raise_user_error('invalid_model')
 
-    def transition_unleash(self):
+    def transition_move_out(self):
         stocks_before_end = []
         for s in self.select.stocks:
             if s.expected_exit_date > self.select.exit_date:
@@ -432,8 +432,8 @@ class QuarantineUnleashExemplary(Wizard):
         return action, {}
 
 class QuarantineUnleashExemplarySelect(ModelView):
-    'Select Exemplary to unleash'
-    __name__ = 'library.quarantine.unleash.select'
+    'Select Exemplary to move out'
+    __name__ = 'library.quarantine.move_out.select'
 
     exit_date = fields.Date('Exit Date', required=True, domain=[
         ('exit_date', '<=', Date()),
