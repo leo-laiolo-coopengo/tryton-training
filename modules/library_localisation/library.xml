@@ -256,6 +256,27 @@
             <field name="model">library.storehouse,-1</field>
             <field name="action" ref="act_storehouse_exemplary_relation"/>
         </record>
+        <!-- Exemplary -> Storehouse -->
+        <record model="ir.action.act_window" id="act_exemplary_storehouse_relation">
+            <field name="name">Storehouse</field>
+            <field name="res_model">library.storehouse</field>
+            <field name="domain" eval="[('exemplary', '=', Eval('active_id'))]" pyson="1"/>
+        </record>
+        <record model="ir.action.act_window.view" id="act_exemplary_storehouse_relation_view1">
+            <field name="sequence" eval="1"/>
+            <field name="view" ref="storehouse_view_list"/>
+            <field name="act_window" ref="act_exemplary_storehouse_relation"/>
+        </record>
+        <record model="ir.action.act_window.view" id="act_exemplary_storehouse_relation_view2">
+            <field name="sequence" eval="1"/>
+            <field name="view" ref="storehouse_view_form"/>
+            <field name="act_window" ref="act_exemplary_storehouse_relation"/>
+        </record>
+        <record model="ir.action.keyword" id="act_open_exemplary_storehouse_keyword">
+            <field name="keyword">form_relate</field>
+            <field name="model">library.book.exemplary,-1</field>
+            <field name="action" ref="act_exemplary_storehouse_relation"/>
+        </record>
         <!-- Quarantine -> Exemplary -->
         <record model="ir.action.act_window" id="act_quarantine_exemplary_relation">
             <field name="name">Exemplary</field>
@@ -276,6 +297,27 @@
             <field name="keyword">form_relate</field>
             <field name="model">library.quarantine,-1</field>
             <field name="action" ref="act_quarantine_exemplary_relation"/>
+        </record>
+        <!-- Exemplary -> Quarantine -->
+        <record model="ir.action.act_window" id="act_exemplary_quarantine_relation">
+            <field name="name">Quarantine</field>
+            <field name="res_model">library.quarantine</field>
+            <field name="domain" eval="[('exemplary', '=', Eval('active_id'))]" pyson="1"/>
+        </record>
+        <record model="ir.action.act_window.view" id="act_exemplary_quarantine_relation_view1">
+            <field name="sequence" eval="1"/>
+            <field name="view" ref="quarantine_view_list"/>
+            <field name="act_window" ref="act_exemplary_quarantine_relation"/>
+        </record>
+        <record model="ir.action.act_window.view" id="act_exemplary_quarantine_relation_view2">
+            <field name="sequence" eval="1"/>
+            <field name="view" ref="quarantine_view_form"/>
+            <field name="act_window" ref="act_exemplary_quarantine_relation"/>
+        </record>
+        <record model="ir.action.keyword" id="act_open_exemplary_quarantine_keyword">
+            <field name="keyword">form_relate</field>
+            <field name="model">library.book.exemplary,-1</field>
+            <field name="action" ref="act_exemplary_quarantine_relation"/>
         </record>
     </data>
 </tryton>
