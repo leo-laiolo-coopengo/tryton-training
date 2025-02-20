@@ -1,4 +1,5 @@
 import datetime
+
 from trytond.wizard import Wizard, StateView, StateTransition, StateAction, Button
 from trytond.model import ModelView, fields
 from trytond.transaction import Transaction
@@ -22,14 +23,16 @@ __all__ = [
     'Return',
     ]
 
+
 class MoveExemplaryOnShelf(Wizard):
     'Move Exemplary on Shelf'
     __name__ = 'library.localisation.move'
 
     start_state = 'select'
-    select = StateView('library.localisation.move.select', 'library_localisation.move_exemplaries_shelf_view_form', [
-        Button('Cancel', 'end', 'tryton-cancel'),
-        Button('Move', 'move', 'tryton-go-next', default=True)])
+    select = StateView('library.localisation.move.select',
+        'library_localisation.move_exemplaries_shelf_view_form', [
+            Button('Cancel', 'end', 'tryton-cancel'),
+            Button('Move', 'move', 'tryton-go-next', default=True)])
     move = StateTransition()
     open_shelves = StateAction('library.act_exemplary')
 
@@ -37,15 +40,17 @@ class MoveExemplaryOnShelf(Wizard):
     def __setup__(cls):
         super().__setup__()
         cls._error_messages.update({
-                'invalid_model': 'This action should be started from an exemplary or a shelf.',
+                'invalid_model': 'This action should be started from an '
+                'exemplary or a shelf.',
                 })
 
     def default_select(self,name):
-        if Transaction().context.get('active_model', '') == 'library.book.exemplary':
+        context_model = Transaction().context.get('active_model', '')
+        if context_model == 'library.book.exemplary':
             return {
                 'exemplaries': Transaction().context.get('active_ids'),
                 }
-        elif Transaction().context.get('active_model', '') == 'library.localisation.shelf':
+        elif context_model == 'library.localisation.shelf':
             shelves = Pool().get('library.localisation.shelf').browse(
                 Transaction().context.get('active_ids'))
             return {
@@ -103,7 +108,8 @@ class StoreExemplary(Wizard):
         if Transaction().context.get('active_model', '') == \
             'library.book.exemplary':
             Exemplary = Pool().get('library.book.exemplary')
-            exemplaries = Exemplary.browse(Transaction().context.get('active_ids'))
+            exemplaries = Exemplary.browse(
+                Transaction().context.get('active_ids'))
             exemplary_unavailable = []
             exemplaries_to_move = []
             for e in exemplaries:
@@ -132,7 +138,8 @@ class StoreExemplary(Wizard):
         stocks = []
         for e in self.select.exemplaries:
             stocks.append(
-                Storehouse(exemplary=e, entrance_date=self.select.entrance_date))
+                Storehouse(exemplary=e,
+                    entrance_date=self.select.entrance_date))
         Storehouse.save(stocks)
         self.select.stocks = stocks
         return 'open_storehouse'
@@ -150,7 +157,8 @@ class StoreExemplarySelect(ModelView):
         'Exemplaries', required=True, domain=[('is_available', '=', True)])
     entrance_date = fields.Date('Entrance Date', required=True, domain=[
             ('entrance_date', '<=', Date())])
-    stocks = fields.Many2Many('library.storehouse', None, None, 'Stocks', readonly=True)
+    stocks = fields.Many2Many('library.storehouse', None, None, 'Stocks',
+        readonly=True)
 
 
 class TakeOutExemplary(Wizard):
@@ -171,8 +179,8 @@ class TakeOutExemplary(Wizard):
         cls._error_messages.update({
                 'invalid_model': 'This action should be started from an '
                 'exemplary.',
-                'exemplary_out_storehouse': 'The following exemplaries are not '
-                'in storehouse: \n%(exemplaries)s',
+                'exemplary_out_storehouse': 'The following exemplaries are '
+                'not in storehouse: \n%(exemplaries)s',
                 'past_stock': 'The choosen stocks aren\'t actuals: \n'
                 '%(stocks)s',
                 'no_shelf': 'The following exemplaries have no attributed '
@@ -181,7 +189,6 @@ class TakeOutExemplary(Wizard):
                 })
 
     def default_select(self,name):
-        # TODO UX: can't take out a book that doesn't have any shelf -> warn + select shelf? Reuse MoveShelf?
         if Transaction().context.get('active_model', '') == \
             'library.storehouse':
             Stockhouse = Pool().get('library.storehouse')
@@ -267,7 +274,8 @@ class CreateExemplariesParameters(metaclass=PoolMeta):
         help='The number of exemplaries that will be placed in the '
         'storehouse.')
     shelf = fields.Many2One('library.localisation.shelf', 'Shelf', states={
-        'required': Less(Eval('number_in_storehouse', 0), Eval('number_of_exemplaries', 0))})
+        'required': Less(Eval('number_in_storehouse', 0),
+            Eval('number_of_exemplaries', 0))})
 
 
 class QuarantineLockDownExemplary(Wizard):
@@ -278,7 +286,8 @@ class QuarantineLockDownExemplary(Wizard):
     select = StateView('library.quarantine.lock_down.select',
         'library_localisation.quarantine_exemplaries_view_form', [
             Button('Cancel', 'end', 'tryton-cancel'),
-            Button('Begin Quarantine', 'lock_down', 'tryton-go-next', default=True)])
+            Button('Begin Quarantine', 'lock_down', 'tryton-go-next',
+                default=True)])
     lock_down = StateTransition()
     open_quarantine = StateAction('library_localisation.act_quarantine')
 
@@ -286,7 +295,8 @@ class QuarantineLockDownExemplary(Wizard):
     def __setup__(cls):
         super().__setup__()
         cls._error_messages.update({
-                'invalid_model': 'This action should be started from an exemplary.',
+                'invalid_model': 'This action should be started from an '
+                'exemplary.',
                 'exemplary_unavailable': 'The following exemplaries are '
                 'unavailable: \n%(exemplaries)s',
                 'invalid_date': 'The date of entrance in the storehouse can\'t'
@@ -297,7 +307,8 @@ class QuarantineLockDownExemplary(Wizard):
         if Transaction().context.get('active_model', '') == \
             'library.book.exemplary':
             Exemplary = Pool().get('library.book.exemplary')
-            exemplaries = Exemplary.browse(Transaction().context.get('active_ids'))
+            exemplaries = Exemplary.browse(
+                Transaction().context.get('active_ids'))
             exemplaries_unavailable = []
             exemplaries_to_move = []
             for e in exemplaries:
@@ -326,7 +337,8 @@ class QuarantineLockDownExemplary(Wizard):
         stocks = []
         for e in self.select.exemplaries:
             stocks.append(
-                Quarantine(exemplary=e, entrance_date=self.select.entrance_date))
+                Quarantine(exemplary=e,
+                    entrance_date=self.select.entrance_date))
         Quarantine.save(stocks)
         self.select.stocks = stocks
         return 'open_quarantine'
@@ -345,7 +357,8 @@ class QuarantineLockDownExemplarySelect(ModelView):
             ('is_borrowed', '=', False)])
     entrance_date = fields.Date('Entrance Date', required=True, domain=[
             ('entrance_date', '<=', Date())])
-    stocks = fields.Many2Many('library.quarantine', None, None, 'Quarantine', readonly=True)
+    stocks = fields.Many2Many('library.quarantine', None, None, 'Quarantine',
+        readonly=True)
 
 
 class QuarantineUnleashExemplary(Wizard):
@@ -356,7 +369,8 @@ class QuarantineUnleashExemplary(Wizard):
     select = StateView('library.quarantine.unleash.select',
         'library_localisation.unleash_exemplaries_view_form', [
             Button('Cancel', 'end', 'tryton-cancel'),
-            Button('Finish quarantine', 'unleash', 'tryton-go-next', default=True)])
+            Button('Finish quarantine', 'unleash', 'tryton-go-next',
+                default=True)])
     unleash = StateTransition()
     open_exemplaries = StateAction('library.act_exemplary')
 
@@ -366,8 +380,8 @@ class QuarantineUnleashExemplary(Wizard):
         cls._error_messages.update({
                 'invalid_model': 'This action should be started from an '
                 'exemplary.',
-                'exemplary_out_quarantine': 'The following exemplaries are not '
-                'in quarantine: \n%(exemplaries)s',
+                'exemplary_out_quarantine': 'The following exemplaries are '
+                'not in quarantine: \n%(exemplaries)s',
                 'past_stock': 'The choosen stocks aren\'t actuals: \n'
                 '%(stocks)s',
                 'before_expected_exit': 'The choosen stocks will be '

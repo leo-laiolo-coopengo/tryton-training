@@ -1,4 +1,5 @@
 import datetime
+
 from sql import Null
 from sql.operators import NotIn
 
@@ -25,11 +26,14 @@ class Shelf(ModelSQL, ModelView):
     _rec_name = 'section'
 
     section = fields.Char('Section', required=True)
-    exemplaries = fields.One2Many('library.book.exemplary', 'shelf', 'Exemplaries')
-    room = fields.Many2One('library.localisation.room', 'Room', required=True, ondelete='CASCADE')
+    exemplaries = fields.One2Many('library.book.exemplary', 'shelf',
+        'Exemplaries')
+    room = fields.Many2One('library.localisation.room', 'Room', required=True,
+        ondelete='CASCADE')
 
     def get_rec_name(self, name):
-        return '%s : %s (%s)' % (self.section, self.room.name, self.room.floor.rec_name)
+        return '%s : %s (%s)' % (self.section, self.room.name,
+            self.room.floor.rec_name)
 
 
 class Room(ModelSQL, ModelView):
@@ -39,7 +43,8 @@ class Room(ModelSQL, ModelView):
 
     name = fields.Char('Name', required=True)
     shelves = fields.One2Many('library.localisation.shelf', 'room', 'Shelves')
-    floor = fields.Many2One('library.localisation.floor', 'Floor', required=True, ondelete='CASCADE')
+    floor = fields.Many2One('library.localisation.floor', 'Floor',
+        required=True, ondelete='CASCADE')
 
     def get_rec_name(self, name):
         return '%s (%s)' % (self.name, self.floor.rec_name)
@@ -66,11 +71,11 @@ class Storehouse(ModelSQL, ModelView):
     entrance_date = fields.Date('Entrance Date', required=True, domain=[
             ('entrance_date', '<=', Date())])
     exit_date = fields.Date('Exit Date', domain=[
-            If(~Eval('exit_date'), [],
-                [('exit_date', '<=', Date()),
+            If(~Eval('exit_date'), [], [('exit_date', '<=', Date()),
                     ('exit_date', '>=', Eval('entrance_date'))])],
         depends=['entrance_date'])
-    exemplary = fields.Many2One('library.book.exemplary', 'Exemplary', required=True, ondelete='CASCADE')
+    exemplary = fields.Many2One('library.book.exemplary', 'Exemplary',
+        required=True, ondelete='CASCADE')
 
     @classmethod
     def default_entrance_date(cls):
@@ -99,10 +104,22 @@ class Quarantine(ModelSQL, ModelView):
         fields.Date('Expected exit date', help='The date at which the '
             'exemplary is supposed to be cleaned'),
         'getter_expected_exit_date', searcher='search_expected_exit_date')
-    exemplary = fields.Many2One('library.book.exemplary', 'Exemplary', required=True, ondelete='CASCADE')
+    exemplary = fields.Many2One('library.book.exemplary', 'Exemplary',
+        required=True, ondelete='CASCADE')
+
+    @classmethod
+    def default_entrance_date(cls):
+        return datetime.date.today()
 
     def getter_expected_exit_date(self, name):
         return self.entrance_date + datetime.timedelta(days=7)
+
+    def get_rec_name(self, name):
+        if self.exit_date:
+            return '%s (%s-%s) Q' % \
+                (self.exemplary.rec_name, self.entrance_date, self.exit_date)
+        else:
+            return '%s (%s) Q' % (self.exemplary.rec_name, self.entrance_date)
 
     @classmethod
     def search_expected_exit_date(cls, name, clause):
@@ -114,17 +131,6 @@ class Quarantine(ModelSQL, ModelView):
                 for x in value]
         return [('entrance_date', operator, value)]
 
-    @classmethod
-    def default_entrance_date(cls):
-        return datetime.date.today()
-
-    def get_rec_name(self, name):
-        if self.exit_date:
-            return '%s (%s-%s) Q' % \
-                (self.exemplary.rec_name, self.entrance_date, self.exit_date)
-        else:
-            return '%s (%s) Q' % (self.exemplary.rec_name, self.entrance_date)
-
 
 class Exemplary(metaclass=PoolMeta):
     __name__ = 'library.book.exemplary'
@@ -132,13 +138,30 @@ class Exemplary(metaclass=PoolMeta):
     shelf = fields.Many2One('library.localisation.shelf', 'Shelf',
         ondelete='RESTRICT')
     stocks = fields.One2Many('library.storehouse', 'exemplary', 'Storehouses')
-    quarantines = fields.One2Many('library.quarantine', 'exemplary', 'Quarantines')
+    quarantines = fields.One2Many('library.quarantine', 'exemplary',
+        'Quarantines')
     is_in_storehouse = fields.Function(fields.Boolean('Is in Storehouse'),
         'getter_is_in_stock', searcher='search_is_in_stock')
     is_in_quarantine = fields.Function(fields.Boolean('Is in Quarantine'),
         'getter_is_in_stock', searcher='search_is_in_stock')
     is_borrowed = fields.Function(fields.Boolean('Is Borrowed'),
         'getter_is_borrowed', searcher='search_is_borrowed')
+
+    @classmethod
+    def create(cls, values):
+        records = super().create(values)
+        cls.put_in_storehouse(records)
+        return records
+
+    @classmethod
+    def write(cls, records, values, *args):
+        super().write(records, values, *args)
+        actions = iter((records, values) + args)
+        all_records = []
+        for r, _ in zip(actions, actions):
+            if r:
+                all_records += r
+        cls.put_in_storehouse(all_records)
 
     @classmethod
     def getter_is_borrowed(cls, exemplaries, name=None):
@@ -151,19 +174,6 @@ class Exemplary(metaclass=PoolMeta):
         for exemplary_id, in cursor.fetchall():
             result_checkout[exemplary_id] = True
         return result_checkout
-
-    @classmethod
-    def search_is_borrowed(cls, name, clause):
-        _, operator, value = clause
-        if operator == '!=':
-            value = not value
-        checkout = Pool().get('library.user.checkout').__table__()
-        exemplary = cls.__table__()
-        query = exemplary.join(checkout, 'LEFT OUTER',
-            condition=(exemplary.id == checkout.exemplary)
-            ).select(exemplary.id,
-            where=(checkout.return_date == Null) & (checkout.id != Null))
-        return [('id', 'in' if value else 'not in', query)]
 
     @classmethod
     def getter_is_in_stock(cls, exemplaries, name):
@@ -179,6 +189,34 @@ class Exemplary(metaclass=PoolMeta):
         for exemplary_id, in cursor.fetchall():
             result[exemplary_id] = True
         return result
+
+    @classmethod
+    def getter_is_available(cls, exemplaries, name):
+        result_checkout = cls.getter_is_borrowed(exemplaries)
+        result_storehouse = cls.getter_is_in_stock(exemplaries,
+            'is_in_storehouse')
+        result_quarantine = cls.getter_is_in_stock(exemplaries,
+            'is_in_quarantine')
+
+        result = {}
+        for e in exemplaries:
+            result[e.id] = not(result_checkout[e.id]) and \
+                not(result_storehouse[e.id]) and \
+                not(result_quarantine[e.id])
+        return result
+
+    @classmethod
+    def search_is_borrowed(cls, name, clause):
+        _, operator, value = clause
+        if operator == '!=':
+            value = not value
+        checkout = Pool().get('library.user.checkout').__table__()
+        exemplary = cls.__table__()
+        query = exemplary.join(checkout, 'LEFT OUTER',
+            condition=(exemplary.id == checkout.exemplary)
+            ).select(exemplary.id,
+            where=(checkout.return_date == Null) & (checkout.id != Null))
+        return [('id', 'in' if value else 'not in', query)]
 
     @classmethod
     def search_is_in_stock(cls, name, clause):
@@ -202,19 +240,6 @@ class Exemplary(metaclass=PoolMeta):
         return cls.search_is_in_stock('is_in_quarantine', clause)
 
     @classmethod
-    def getter_is_available(cls, exemplaries, name):
-        result_checkout = cls.getter_is_borrowed(exemplaries)
-        result_storehouse = cls.getter_is_in_stock(exemplaries, 'is_in_storehouse')
-        result_quarantine = cls.getter_is_in_stock(exemplaries, 'is_in_quarantine')
-
-        result = {}
-        for e in exemplaries:
-            result[e.id] = not(result_checkout[e.id]) and \
-                not(result_storehouse[e.id]) and \
-                not(result_quarantine[e.id])
-        return result
-
-    @classmethod
     def search_is_available(cls, name, clause):
         _, operator, value = clause
         if operator == '!=':
@@ -235,22 +260,6 @@ class Exemplary(metaclass=PoolMeta):
                 ((storehouse.exit_date == Null) & (storehouse.id != Null)) | \
                 ((quarantine.exit_date == Null) & (quarantine.id != Null)))
         return [('id', 'in' if not value else 'not in', query)]
-
-    @classmethod
-    def create(cls, values):
-        records = super().create(values)
-        cls.put_in_storehouse(records)
-        return records
-
-    @classmethod
-    def write(cls, records, values, *args):
-        super().write(records, values, *args)
-        actions = iter((records, values) + args)
-        all_records = []
-        for r, _ in zip(actions, actions):
-            if r:
-                all_records += r
-        cls.put_in_storehouse(all_records)
 
     @classmethod
     def put_in_storehouse(cls, records=None):
