@@ -91,9 +91,12 @@ class StoreExemplary(Wizard):
     def __setup__(cls):
         super().__setup__()
         cls._error_messages.update({
-                'invalid_model': 'This action should be started from an exemplary.',
+                'invalid_model': 'This action should be started from an '
+                'exemplary.',
                 'exemplary_unavailable': 'The following exemplaries are '
                 'unavailable: \n%(exemplaries)s',
+                'invalid_date': 'The date of entrance in the storehouse can\'t'
+                ' be done before an exemplary acquisition (%(date)s).'
                 })
 
     def default_select(self,name):
@@ -120,6 +123,11 @@ class StoreExemplary(Wizard):
             self.raise_user_error('invalid_model')
 
     def transition_store(self):
+        minimum_entrance_date = min(
+            [e.acquisition_date for e in self.select.exemplaries])
+        if minimum_entrance_date > self.select.entrance_date:
+            self.raise_user_error('invalid_date',
+                {'date': minimum_entrance_date})
         Storehouse = Pool().get('library.storehouse')
         stocks = []
         for e in self.select.exemplaries:
@@ -161,10 +169,15 @@ class TakeOutExemplary(Wizard):
     def __setup__(cls):
         super().__setup__()
         cls._error_messages.update({
-                'invalid_model': 'This action should be started from an exemplary.',
-                'exemplary_out_storehouse': 'The following exemplaries are not in '
-                'storehouse: \n%(exemplaries)s',
-                'past_stock': 'The choosen stocks aren\'t actuals: \n%(stocks)s',
+                'invalid_model': 'This action should be started from an '
+                'exemplary.',
+                'exemplary_out_storehouse': 'The following exemplaries are not '
+                'in storehouse: \n%(exemplaries)s',
+                'past_stock': 'The choosen stocks aren\'t actuals: \n'
+                '%(stocks)s',
+                'no_shelf': 'The following exemplaries have no attributed '
+                'shelf. Please use "Move Exemplaries" to give them one.\n'
+                '%(exemplaries)s',
                 })
 
     def default_select(self,name):
@@ -175,15 +188,22 @@ class TakeOutExemplary(Wizard):
             stocks = Stockhouse.browse(Transaction().context.get('active_ids'))
             past_stocks = []
             stocks_to_move = []
+            no_shelf = []
             for s in stocks:
                 if s.exit_date:
                     past_stocks.append(s.rec_name)
+                elif not(s.exemplary.shelf):
+                    no_shelf.append(s.exemplary.rec_name)
                 else:
                     stocks_to_move.append(s.id)
             if len(past_stocks) > 0:
                 self.raise_user_warning('past_stock_warning' + str(
                     past_stocks), 'past_stock',
                 {'stocks': ', '.join(past_stocks)})
+            elif len(no_shelf) > 0:
+                self.raise_user_warning('no_shelf_warning' + str(
+                    no_shelf), 'no_shelf',
+                {'exemplaries': ', '.join(no_shelf)})
             return {
                 'stocks': stocks_to_move,
                 'exit_date': datetime.date.today()
@@ -210,7 +230,8 @@ class TakeOutExemplarySelect(ModelView):
         ('exit_date', '<=', Date()),
         ('exit_date', '>=', Eval('entrance_date'))])
     stocks = fields.Many2Many('library.storehouse', None, None, 'Stocks',
-        required=True, domain=[('exit_date', '=', None)])
+        required=True, domain=[('exit_date', '=', None),
+            ('exemplary.shelf', '!=', None)])
 
 
 class CreateExemplaries(metaclass=PoolMeta):
@@ -268,6 +289,8 @@ class QuarantineLockDownExemplary(Wizard):
                 'invalid_model': 'This action should be started from an exemplary.',
                 'exemplary_unavailable': 'The following exemplaries are '
                 'unavailable: \n%(exemplaries)s',
+                'invalid_date': 'The date of entrance in the storehouse can\'t'
+                ' be done before an exemplary acquisition (%(date)s).'
                 })
 
     def default_select(self,name):
@@ -294,6 +317,11 @@ class QuarantineLockDownExemplary(Wizard):
             self.raise_user_error('invalid_model')
 
     def transition_lock_down(self):
+        minimum_entrance_date = min(
+            [e.acquisition_date for e in self.select.exemplaries])
+        if minimum_entrance_date > self.select.entrance_date:
+            self.raise_user_error('invalid_date',
+                {'date': minimum_entrance_date})
         Quarantine = Pool().get('library.quarantine')
         stocks = []
         for e in self.select.exemplaries:
@@ -313,7 +341,8 @@ class QuarantineLockDownExemplarySelect(ModelView):
     __name__ = 'library.quarantine.lock_down.select'
 
     exemplaries = fields.Many2Many('library.book.exemplary', None, None,
-        'Exemplaries', required=True, domain=[('is_in_quarantine', '=', False), ('is_borrowed', '=', False)])
+        'Exemplaries', required=True, domain=[('is_in_quarantine', '=', False),
+            ('is_borrowed', '=', False)])
     entrance_date = fields.Date('Entrance Date', required=True, domain=[
             ('entrance_date', '<=', Date())])
     stocks = fields.Many2Many('library.quarantine', None, None, 'Quarantine', readonly=True)

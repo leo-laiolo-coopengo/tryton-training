@@ -129,7 +129,8 @@ class Quarantine(ModelSQL, ModelView):
 class Exemplary(metaclass=PoolMeta):
     __name__ = 'library.book.exemplary'
 
-    shelf = fields.Many2One('library.localisation.shelf', 'Shelf', ondelete='RESTRICT')
+    shelf = fields.Many2One('library.localisation.shelf', 'Shelf',
+        ondelete='RESTRICT')
     stocks = fields.One2Many('library.storehouse', 'exemplary', 'Storehouses')
     quarantines = fields.One2Many('library.quarantine', 'exemplary', 'Quarantines')
     is_in_storehouse = fields.Function(fields.Boolean('Is in Storehouse'),
@@ -156,12 +157,12 @@ class Exemplary(metaclass=PoolMeta):
         _, operator, value = clause
         if operator == '!=':
             value = not value
-        checkout = Pool().get('library.user.checkout')
+        checkout = Pool().get('library.user.checkout').__table__()
         exemplary = cls.__table__()
         query = exemplary.join(checkout, 'LEFT OUTER',
             condition=(exemplary.id == checkout.exemplary)
             ).select(exemplary.id,
-            where=(checkout.exit_date == Null) & (checkout.id != Null))
+            where=(checkout.return_date == Null) & (checkout.id != Null))
         return [('id', 'in' if value else 'not in', query)]
 
     @classmethod
@@ -195,6 +196,10 @@ class Exemplary(metaclass=PoolMeta):
             ).select(exemplary.id,
             where=(stock.exit_date == Null) & (stock.id != Null))
         return [('id', 'in' if value else 'not in', query)]
+
+    @classmethod
+    def search_is_in_quarantine(cls, name, clause):
+        return cls.search_is_in_stock('is_in_quarantine', clause)
 
     @classmethod
     def getter_is_available(cls, exemplaries, name):
@@ -242,9 +247,9 @@ class Exemplary(metaclass=PoolMeta):
         print(records)
         Storehouse = Pool().get('library.storehouse')
         stocks = []
-        for v in records:
-            if not v.shelf:
-                stocks.append(Storehouse(exemplary=v,
+        for e in records:
+            if not(e.shelf or e.is_in_storehouse):
+                stocks.append(Storehouse(exemplary=e,
                     entrance_date=datetime.date.today()))
         if len(stocks) > 0:
             Storehouse.save(stocks)
