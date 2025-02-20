@@ -214,27 +214,6 @@
             <field name="model">library.localisation.shelf,-1</field>
             <field name="action" ref="act_shelf_exemplary_relation"/>
         </record>
-        <!-- Room -> Exemplaries -->
-        <record model="ir.action.act_window" id="act_room_exemplary_relation">
-            <field name="name">Exemplaries</field>
-            <field name="res_model">library.book.exemplary</field>
-            <field name="domain" eval="[('shelf.room', '=', Eval('active_id'))]" pyson="1"/>
-        </record>
-        <record model="ir.action.act_window.view" id="act_room_exemplary_relation_view1">
-            <field name="sequence" eval="1"/>
-            <field name="view" ref="exemplary_view_list"/>
-            <field name="act_window" ref="act_room_exemplary_relation"/>
-        </record>
-        <record model="ir.action.act_window.view" id="act_room_exemplary_relation_view2">
-            <field name="sequence" eval="1"/>
-            <field name="view" ref="exemplary_view_form"/>
-            <field name="act_window" ref="act_room_exemplary_relation"/>
-        </record>
-        <record model="ir.action.keyword" id="act_open_room_exemplary_keyword">
-            <field name="keyword">form_relate</field>
-            <field name="model">library.localisation.room,-1</field>
-            <field name="action" ref="act_room_exemplary_relation"/>
-        </record>
         <!-- Storehouse -> Exemplary -->
         <record model="ir.action.act_window" id="act_storehouse_exemplary_relation">
             <field name="name">Exemplary</field>
