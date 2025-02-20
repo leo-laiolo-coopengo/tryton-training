@@ -14,7 +14,7 @@ def register():
         library.Book,
         library.Quarantine,
         wizard.MoveExemplaryOnShelfSelection,
-        wizard.StoreExemplarySelect,
+        wizard.MoveExemplaryInStorehouseSelect,
         wizard.TakeOutExemplarySelect,
         wizard.CreateExemplariesParameters,
         wizard.MoveExemplaryOutQarantineSelect,
@@ -23,7 +23,7 @@ def register():
 
     Pool.register(
         wizard.MoveExemplaryOnShelf,
-        wizard.StoreExemplary,
+        wizard.MoveExemplaryInStorehouse,
         wizard.TakeOutExemplary,
         wizard.CreateExemplaries,
         wizard.MoveExemplaryInQarantine,

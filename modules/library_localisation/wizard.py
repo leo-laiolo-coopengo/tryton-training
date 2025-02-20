@@ -10,8 +10,8 @@ from trytond.pool import Pool, PoolMeta
 __all__ = [
     'MoveExemplaryOnShelf',
     'MoveExemplaryOnShelfSelection',
-    'StoreExemplary',
-    'StoreExemplarySelect',
+    'MoveExemplaryInStorehouse',
+    'MoveExemplaryInStorehouseSelect',
     'TakeOutExemplary',
     'TakeOutExemplarySelect',
     'CreateExemplaries',
@@ -80,13 +80,13 @@ class MoveExemplaryOnShelfSelection(ModelView):
         required=True)
 
 
-class StoreExemplary(Wizard):
+class MoveExemplaryInStorehouse(Wizard):
     'Store Exemplary in Storehouse'
     __name__ = 'library.storehouse.move_in'
 
     start_state = 'select'
     select = StateView('library.storehouse.move_in.select',
-        'library_localisation.store_exemplaries_view_form', [
+        'library_localisation.storehouse_exemplaries_view_form', [
             Button('Cancel', 'end', 'tryton-cancel'),
             Button('Store', 'store', 'tryton-go-next', default=True)])
     store = StateTransition()
@@ -149,8 +149,8 @@ class StoreExemplary(Wizard):
             ('id', 'in', [x.id for x in self.select.stocks])])
         return action, {}
 
-class StoreExemplarySelect(ModelView):
-    'Select Exemplary to store'
+class MoveExemplaryInStorehouseSelect(ModelView):
+    'Select Exemplary to move in Storehouse'
     __name__ = 'library.storehouse.move_in.select'
 
     exemplaries = fields.Many2Many('library.book.exemplary', None, None,
@@ -349,7 +349,7 @@ class MoveExemplaryInQarantine(Wizard):
         return action, {}
 
 class MoveExemplaryInQarantineSelect(ModelView):
-    'Select Exemplary to store'
+    'Select Exemplary to move in Quarantine'
     __name__ = 'library.quarantine.move_in.select'
 
     exemplaries = fields.Many2Many('library.book.exemplary', None, None,
@@ -359,7 +359,12 @@ class MoveExemplaryInQarantineSelect(ModelView):
             ('entrance_date', '<=', Date())])
     stocks = fields.Many2Many('library.quarantine', None, None, 'Quarantine',
         readonly=True)
+    expected_exit_date = fields.Function(
+        fields.Date('Expected exit date'), 'on_change_with_expected_exit_date')
 
+    @fields.depends('entrance_date')
+    def on_change_with_expected_exit_date(self):
+        return self.entrance_date + datetime.timedelta(days=7)
 
 class MoveExemplaryOutQarantine(Wizard):
     'Unleash Exemplary from Quarantine'
@@ -438,8 +443,17 @@ class MoveExemplaryOutQarantineSelect(ModelView):
     exit_date = fields.Date('Exit Date', required=True, domain=[
         ('exit_date', '<=', Date()),
         ('exit_date', '>=', Eval('entrance_date'))])
+    expected_exit_date = fields.Function(
+        fields.Date('Expected exit date'), 'on_change_with_expected_exit_date')
     stocks = fields.Many2Many('library.quarantine', None, None, 'Stocks',
         required=True, domain=[('exit_date', '=', None)])
+
+    @fields.depends('stocks')
+    def on_change_with_expected_exit_date(self):
+        if self.stocks:
+            return min([s.expected_exit_date for s in self.stocks])
+        else:
+            return None
 
 class Return(Wizard):
     'Return'

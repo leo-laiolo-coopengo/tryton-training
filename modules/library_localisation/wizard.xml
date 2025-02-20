@@ -27,25 +27,25 @@
             <field name="name">move_exemplaries_shelf_form</field>
         </record>
 
-        <!-- ##################### -->
-        <!-- # Store Exemplaries # -->
-        <!-- ##################### -->
-        <record model="ir.action.wizard" id="act_library_store_exemplary">
-            <field name="name">Store Exemplaries</field>
+        <!-- ################################## -->
+        <!-- # Move Exemplaries in Storehouse # -->
+        <!-- ################################## -->
+        <record model="ir.action.wizard" id="act_library_storehouse_exemplary">
+            <field name="name">Move in Storehouse</field>
             <field name="wiz_name">library.storehouse.move_in</field>
         </record>
-        <record model="ir.action.keyword" id="act_library_store_exemplary_keyword">
+        <record model="ir.action.keyword" id="act_library_storehouse_exemplary_keyword">
             <field name="keyword">form_action</field>
             <field name="model">library.book.exemplary,-1</field>
-            <field name="action" ref="act_library_store_exemplary"/>
+            <field name="action" ref="act_library_storehouse_exemplary"/>
         </record>
         <!-- #################### -->
         <!-- # Select Exemplary # -->
         <!-- #################### -->
-        <record model="ir.ui.view" id="store_exemplaries_view_form">
+        <record model="ir.ui.view" id="storehouse_exemplaries_view_form">
             <field name="model">library.storehouse.move_in.select</field>
             <field name="type">form</field>
-            <field name="name">store_exemplaries_form</field>
+            <field name="name">storehouse_exemplaries_form</field>
         </record>
 
         <!-- ######################## -->
@@ -96,7 +96,7 @@
         <record model="ir.ui.view" id="quarantine_exemplaries_view_form">
             <field name="model">library.quarantine.move_in.select</field>
             <field name="type">form</field>
-            <field name="name">store_exemplaries_form</field>
+            <field name="name">quarantine_exemplaries_form</field>
         </record>
 
         <!-- ###################################### -->
@@ -117,7 +117,7 @@
         <record model="ir.ui.view" id="quarantine_out_exemplaries_view_form">
             <field name="model">library.quarantine.move_out.select</field>
             <field name="type">form</field>
-            <field name="name">take_out_exemplaries_form</field>
+            <field name="name">quarantine_out_exemplaries_form</field>
         </record>
     </data>
 </tryton>
