@@ -364,14 +364,18 @@ class QuarantineUnleashExemplary(Wizard):
     def __setup__(cls):
         super().__setup__()
         cls._error_messages.update({
-                'invalid_model': 'This action should be started from an exemplary.',
-                'exemplary_out_quarantine': 'The following exemplaries are not in '
-                'quarantine: \n%(exemplaries)s',
-                'past_stock': 'The choosen stocks aren\'t actuals: \n%(stocks)s',
+                'invalid_model': 'This action should be started from an '
+                'exemplary.',
+                'exemplary_out_quarantine': 'The following exemplaries are not '
+                'in quarantine: \n%(exemplaries)s',
+                'past_stock': 'The choosen stocks aren\'t actuals: \n'
+                '%(stocks)s',
+                'before_expected_exit': 'The choosen stocks will be '
+                'unleashed before the expected end of quarantine: \n'
+                '%(stocks)s',
                 })
 
     def default_select(self,name):
-        # TODO UX: Warn the user that books will be unleashed before the end of their quarantine
         if Transaction().context.get('active_model', '') == \
             'library.quarantine':
             Quarantine = Pool().get('library.quarantine')
@@ -395,6 +399,14 @@ class QuarantineUnleashExemplary(Wizard):
             self.raise_user_error('invalid_model')
 
     def transition_unleash(self):
+        stocks_before_end = []
+        for s in self.select.stocks:
+            if s.expected_exit_date > self.select.exit_date:
+                stocks_before_end.append(s.rec_name)
+        if len(stocks_before_end) > 0:
+            self.raise_user_warning('before_expected_exit_warning' + str(
+                stocks_before_end), 'before_expected_exit',
+            {'stocks': ', '.join(stocks_before_end)})
         Quarantine = Pool().get('library.quarantine')
         Quarantine.write(list(self.select.stocks), {
                 'exit_date': self.select.exit_date})
