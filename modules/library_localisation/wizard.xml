@@ -32,7 +32,7 @@
         <!-- ##################### -->
         <record model="ir.action.wizard" id="act_library_store_exemplary">
             <field name="name">Store Exemplaries</field>
-            <field name="wiz_name">library.storehouse.put_in</field>
+            <field name="wiz_name">library.storehouse.move_in</field>
         </record>
         <record model="ir.action.keyword" id="act_library_store_exemplary_keyword">
             <field name="keyword">form_action</field>
@@ -43,7 +43,7 @@
         <!-- # Select Exemplary # -->
         <!-- #################### -->
         <record model="ir.ui.view" id="store_exemplaries_view_form">
-            <field name="model">library.storehouse.put_in.select</field>
+            <field name="model">library.storehouse.move_in.select</field>
             <field name="type">form</field>
             <field name="name">store_exemplaries_form</field>
         </record>
@@ -79,11 +79,11 @@
         </record>
 
         <!-- ################################# -->
-        <!-- # Put Exemplaries in Quarantine # -->
+        <!-- # Move Exemplaries in Quarantine # -->
         <!-- ################################# -->
         <record model="ir.action.wizard" id="act_library_quarantine_exemplary">
-            <field name="name">Put in Quarantine</field>
-            <field name="wiz_name">library.quarantine.lock_down</field>
+            <field name="name">Move in Quarantine</field>
+            <field name="wiz_name">library.quarantine.move_in</field>
         </record>
         <record model="ir.action.keyword" id="act_library_quarantine_exemplary_keyword">
             <field name="keyword">form_action</field>
@@ -94,7 +94,7 @@
         <!-- # Select Exemplary # -->
         <!-- #################### -->
         <record model="ir.ui.view" id="quarantine_exemplaries_view_form">
-            <field name="model">library.quarantine.lock_down.select</field>
+            <field name="model">library.quarantine.move_in.select</field>
             <field name="type">form</field>
             <field name="name">store_exemplaries_form</field>
         </record>

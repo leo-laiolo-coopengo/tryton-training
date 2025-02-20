@@ -16,10 +16,10 @@ __all__ = [
     'TakeOutExemplarySelect',
     'CreateExemplaries',
     'CreateExemplariesParameters',
-    'QuarantineLockDownExemplary',
-    'QuarantineLockDownExemplarySelect',
-    'QuarantineUnleashExemplary',
-    'QuarantineUnleashExemplarySelect',
+    'MoveExemplaryInQarantine',
+    'MoveExemplaryInQarantineSelect',
+    'MoveExemplaryOutQarantine',
+    'MoveExemplaryOutQarantineSelect',
     'Return',
     ]
 
@@ -82,10 +82,10 @@ class MoveExemplaryOnShelfSelection(ModelView):
 
 class StoreExemplary(Wizard):
     'Store Exemplary in Storehouse'
-    __name__ = 'library.storehouse.put_in'
+    __name__ = 'library.storehouse.move_in'
 
     start_state = 'select'
-    select = StateView('library.storehouse.put_in.select',
+    select = StateView('library.storehouse.move_in.select',
         'library_localisation.store_exemplaries_view_form', [
             Button('Cancel', 'end', 'tryton-cancel'),
             Button('Store', 'store', 'tryton-go-next', default=True)])
@@ -151,7 +151,7 @@ class StoreExemplary(Wizard):
 
 class StoreExemplarySelect(ModelView):
     'Select Exemplary to store'
-    __name__ = 'library.storehouse.put_in.select'
+    __name__ = 'library.storehouse.move_in.select'
 
     exemplaries = fields.Many2Many('library.book.exemplary', None, None,
         'Exemplaries', required=True, domain=[('is_available', '=', True)])
@@ -278,17 +278,17 @@ class CreateExemplariesParameters(metaclass=PoolMeta):
             Eval('number_of_exemplaries', 0))})
 
 
-class QuarantineLockDownExemplary(Wizard):
-    'Put Exemplary in Quarantine'
-    __name__ = 'library.quarantine.lock_down'
+class MoveExemplaryInQarantine(Wizard):
+    'Move Exemplary in Quarantine'
+    __name__ = 'library.quarantine.move_in'
 
     start_state = 'select'
-    select = StateView('library.quarantine.lock_down.select',
+    select = StateView('library.quarantine.move_in.select',
         'library_localisation.quarantine_exemplaries_view_form', [
             Button('Cancel', 'end', 'tryton-cancel'),
-            Button('Begin Quarantine', 'lock_down', 'tryton-go-next',
+            Button('Begin Quarantine', 'move_in', 'tryton-go-next',
                 default=True)])
-    lock_down = StateTransition()
+    move_in = StateTransition()
     open_quarantine = StateAction('library_localisation.act_quarantine')
 
     @classmethod
@@ -327,7 +327,7 @@ class QuarantineLockDownExemplary(Wizard):
         else:
             self.raise_user_error('invalid_model')
 
-    def transition_lock_down(self):
+    def transition_move_in(self):
         minimum_entrance_date = min(
             [e.acquisition_date for e in self.select.exemplaries])
         if minimum_entrance_date > self.select.entrance_date:
@@ -348,9 +348,9 @@ class QuarantineLockDownExemplary(Wizard):
             ('id', 'in', [x.id for x in self.select.stocks])])
         return action, {}
 
-class QuarantineLockDownExemplarySelect(ModelView):
+class MoveExemplaryInQarantineSelect(ModelView):
     'Select Exemplary to store'
-    __name__ = 'library.quarantine.lock_down.select'
+    __name__ = 'library.quarantine.move_in.select'
 
     exemplaries = fields.Many2Many('library.book.exemplary', None, None,
         'Exemplaries', required=True, domain=[('is_in_quarantine', '=', False),
@@ -361,7 +361,7 @@ class QuarantineLockDownExemplarySelect(ModelView):
         readonly=True)
 
 
-class QuarantineUnleashExemplary(Wizard):
+class MoveExemplaryOutQarantine(Wizard):
     'Unleash Exemplary from Quarantine'
     __name__ = 'library.quarantine.move_out'
 
@@ -431,7 +431,7 @@ class QuarantineUnleashExemplary(Wizard):
             ('id', 'in', [x.exemplary.id for x in self.select.stocks])])
         return action, {}
 
-class QuarantineUnleashExemplarySelect(ModelView):
+class MoveExemplaryOutQarantineSelect(ModelView):
     'Select Exemplary to move out'
     __name__ = 'library.quarantine.move_out.select'
 
@@ -445,15 +445,15 @@ class Return(Wizard):
     'Return'
     __name__ = 'library.user.return'
 
-    put_in_quarantine = StateTransition()
+    move_in_quarantine = StateTransition()
 
     def transition_return_(self):
         Checkout = Pool().get('library.user.checkout')
         Checkout.write(list(self.select_checkouts.checkouts), {
                 'return_date': self.select_checkouts.date})
-        return 'put_in_quarantine'
+        return 'move_in_quarantine'
 
-    def transition_put_in_quarantine(self):
+    def transition_move_in_quarantine(self):
         Quarantine = Pool().get('library.quarantine')
         to_create = []
         for c in self.select_checkouts.checkouts:

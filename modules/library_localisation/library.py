@@ -150,7 +150,7 @@ class Exemplary(metaclass=PoolMeta):
     @classmethod
     def create(cls, values):
         records = super().create(values)
-        cls.put_in_storehouse(records)
+        cls.move_in_storehouse(records)
         return records
 
     @classmethod
@@ -161,7 +161,7 @@ class Exemplary(metaclass=PoolMeta):
         for r, _ in zip(actions, actions):
             if r:
                 all_records += r
-        cls.put_in_storehouse(all_records)
+        cls.move_in_storehouse(all_records)
 
     @classmethod
     def getter_is_borrowed(cls, exemplaries, name=None):
@@ -262,7 +262,7 @@ class Exemplary(metaclass=PoolMeta):
         return [('id', 'in' if not value else 'not in', query)]
 
     @classmethod
-    def put_in_storehouse(cls, records=None):
+    def move_in_storehouse(cls, records=None):
         Storehouse = Pool().get('library.storehouse')
         stocks = []
         for e in records:
