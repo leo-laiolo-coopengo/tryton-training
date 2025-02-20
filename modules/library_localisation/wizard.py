@@ -12,8 +12,8 @@ __all__ = [
     'MoveExemplaryOnShelfSelection',
     'MoveExemplaryInStorehouse',
     'MoveExemplaryInStorehouseSelect',
-    'TakeOutExemplary',
-    'TakeOutExemplarySelect',
+    'MoveExemplaryOutStorehouse',
+    'MoveExemplaryOutStorehouseSelect',
     'CreateExemplaries',
     'CreateExemplariesParameters',
     'MoveExemplaryInQarantine',
@@ -161,16 +161,16 @@ class MoveExemplaryInStorehouseSelect(ModelView):
         readonly=True)
 
 
-class TakeOutExemplary(Wizard):
+class MoveExemplaryOutStorehouse(Wizard):
     'Take Exemplary out of Storehouse'
-    __name__ = 'library.storehouse.take_out'
+    __name__ = 'library.storehouse.move_out'
 
     start_state = 'select'
-    select = StateView('library.storehouse.take_out.select',
-        'library_localisation.take_out_exemplaries_view_form', [
+    select = StateView('library.storehouse.move_out.select',
+        'library_localisation.storehouse_out_exemplaries_view_form', [
             Button('Cancel', 'end', 'tryton-cancel'),
-            Button('Take out', 'take_out', 'tryton-go-next', default=True)])
-    take_out = StateTransition()
+            Button('Take out', 'move_out', 'tryton-go-next', default=True)])
+    move_out = StateTransition()
     open_exemplaries = StateAction('library.act_exemplary')
 
     @classmethod
@@ -190,7 +190,7 @@ class TakeOutExemplary(Wizard):
 
     def default_select(self,name):
         if Transaction().context.get('active_model', '') == \
-            'library.storehouse':
+                'library.storehouse':
             Stockhouse = Pool().get('library.storehouse')
             stocks = Stockhouse.browse(Transaction().context.get('active_ids'))
             past_stocks = []
@@ -218,7 +218,7 @@ class TakeOutExemplary(Wizard):
         else:
             self.raise_user_error('invalid_model')
 
-    def transition_take_out(self):
+    def transition_move_out(self):
         Storehouse = Pool().get('library.storehouse')
         Storehouse.write(list(self.select.stocks), {
                 'exit_date': self.select.exit_date})
@@ -229,9 +229,9 @@ class TakeOutExemplary(Wizard):
             ('id', 'in', [x.exemplary.id for x in self.select.stocks])])
         return action, {}
 
-class TakeOutExemplarySelect(ModelView):
-    'Select Exemplary to take_out'
-    __name__ = 'library.storehouse.take_out.select'
+class MoveExemplaryOutStorehouseSelect(ModelView):
+    'Select Exemplary to move_out'
+    __name__ = 'library.storehouse.move_out.select'
 
     exit_date = fields.Date('Exit Date', required=True, domain=[
         ('exit_date', '<=', Date()),
