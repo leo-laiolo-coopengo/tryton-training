@@ -394,7 +394,7 @@ class MoveExemplaryOutQarantine(Wizard):
                 '%(stocks)s',
                 })
 
-    def default_select(self,name):
+    def default_select(self, name):
         if Transaction().context.get('active_model', '') == \
             'library.quarantine':
             Quarantine = Pool().get('library.quarantine')
@@ -462,9 +462,7 @@ class Return(Wizard):
     move_in_quarantine = StateTransition()
 
     def transition_return_(self):
-        Checkout = Pool().get('library.user.checkout')
-        Checkout.write(list(self.select_checkouts.checkouts), {
-                'return_date': self.select_checkouts.date})
+        super().transition_return_()
         return 'move_in_quarantine'
 
     def transition_move_in_quarantine(self):
